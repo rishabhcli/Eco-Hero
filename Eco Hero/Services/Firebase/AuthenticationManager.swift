@@ -25,21 +25,43 @@ class AuthenticationManager {
     }
 
     func setupAuthListener() {
-        guard !hasSetupListener else { return }
+        guard !hasSetupListener else {
+            print("⚠️ AuthManager: Listener already setup, skipping")
+            return
+        }
         hasSetupListener = true
 
-        // Listen for authentication state changes
-        authStateHandler = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-            self?.isAuthenticated = user != nil
-            self?.currentUserEmail = user?.email
-            self?.currentUserID = user?.uid
-        }
+        print("🔄 AuthManager: Setting up auth listener...")
 
-        // Check current auth state
-        if let user = Auth.auth().currentUser {
-            self.isAuthenticated = true
-            self.currentUserEmail = user.email
-            self.currentUserID = user.uid
+        do {
+            // Listen for authentication state changes
+            authStateHandler = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+                print("🔔 AuthManager: Auth state changed")
+                self?.isAuthenticated = user != nil
+                self?.currentUserEmail = user?.email
+                self?.currentUserID = user?.uid
+
+                if let user = user {
+                    print("✅ AuthManager: User signed in: \(user.uid)")
+                } else {
+                    print("ℹ️ AuthManager: No user signed in")
+                }
+            }
+
+            // Check current auth state
+            if let user = Auth.auth().currentUser {
+                print("✅ AuthManager: Current user found: \(user.uid)")
+                self.isAuthenticated = true
+                self.currentUserEmail = user.email
+                self.currentUserID = user.uid
+            } else {
+                print("ℹ️ AuthManager: No current user")
+            }
+
+            print("✅ AuthManager: Auth listener setup complete")
+        } catch {
+            print("❌ AuthManager: Error setting up auth listener: \(error)")
+            print("❌ AuthManager: Error details: \(error.localizedDescription)")
         }
     }
 

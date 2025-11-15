@@ -18,24 +18,41 @@ struct Eco_HeroApp: App {
     @State private var firestoreService = FirestoreService()
 
     var sharedModelContainer: ModelContainer = {
+        print("🔄 App: Creating SwiftData ModelContainer...")
+
         let schema = Schema([
             EcoActivity.self,
             UserProfile.self,
             Challenge.self,
             Achievement.self
         ])
+
+        print("✅ App: Schema created with \(schema.entities.count) entities")
+
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            print("✅ App: ModelContainer created successfully")
+            return container
         } catch {
+            print("❌ App: FATAL ERROR - Could not create ModelContainer")
+            print("❌ App: Error: \(error)")
+            print("❌ App: Error details: \(error.localizedDescription)")
+
+            if let nsError = error as NSError? {
+                print("❌ App: Error domain: \(nsError.domain)")
+                print("❌ App: Error code: \(nsError.code)")
+                print("❌ App: Error userInfo: \(nsError.userInfo)")
+            }
+
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
 
     var body: some Scene {
         WindowGroup {
-            Group {
+            ZStack {
                 if authManager.isAuthenticated {
                     MainTabView()
                         .environment(authManager)
@@ -47,6 +64,7 @@ struct Eco_HeroApp: App {
                 }
             }
             .onAppear {
+                print("🔄 App: View appeared, setting up auth listener...")
                 // Setup auth listener after Firebase is configured
                 authManager.setupAuthListener()
             }
