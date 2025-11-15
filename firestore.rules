@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user owns the data
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User documents - users can only access their own data
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // Activities subcollection
+      match /activities/{activityId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Challenges subcollection
+      match /challenges/{challengeId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Achievements subcollection
+      match /achievements/{achievementId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Public challenges (read-only for all authenticated users)
+    match /public_challenges/{challengeId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only admins can write via Firebase Console
+    }
+
+    // Leaderboards (optional - for future feature)
+    match /leaderboards/{leaderboardId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Managed by Cloud Functions
+    }
+  }
+}

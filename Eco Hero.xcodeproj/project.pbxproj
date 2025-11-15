@@ -6,6 +6,20 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		496EC5A92EC9219500B9C3CD /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 496EC5A82EC9219500B9C3CD /* GoogleService-Info.plist */; };
+		496EC5AC2EC9229000B9C3CD /* FirebaseInAppMessaging-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = 496EC5AB2EC9229000B9C3CD /* FirebaseInAppMessaging-Beta */; };
+		496EC5AE2EC9229000B9C3CD /* FirebaseInstallations in Frameworks */ = {isa = PBXBuildFile; productRef = 496EC5AD2EC9229000B9C3CD /* FirebaseInstallations */; };
+		496EC5B02EC9229000B9C3CD /* FirebaseMLModelDownloader in Frameworks */ = {isa = PBXBuildFile; productRef = 496EC5AF2EC9229000B9C3CD /* FirebaseMLModelDownloader */; };
+		496EC5B22EC9229000B9C3CD /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 496EC5B12EC9229000B9C3CD /* FirebaseMessaging */; };
+		496EC5B42EC9229000B9C3CD /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = 496EC5B32EC9229000B9C3CD /* FirebasePerformance */; };
+		496EC5B62EC9229000B9C3CD /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 496EC5B52EC9229000B9C3CD /* FirebaseRemoteConfig */; };
+		496EC5B82EC9229000B9C3CD /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 496EC5B72EC9229000B9C3CD /* FirebaseStorage */; };
+		496EC5BA2EC9229000B9C3CD /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 496EC5B92EC9229000B9C3CD /* FirebaseStorageCombine-Community */; };
+		496EC5BF2EC92AE200B9C3CD /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 496EC5BE2EC92AE200B9C3CD /* FirebaseAuth */; };
+		496EC5C12EC92AE800B9C3CD /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 496EC5C02EC92AE800B9C3CD /* FirebaseFirestore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		49B9DDB32EC914B800DC72D3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +38,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		496EC5A82EC9219500B9C3CD /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		49B9DDA32EC914B700DC72D3 /* Eco Hero.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Eco Hero.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		49B9DDB22EC914B800DC72D3 /* Eco HeroTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Eco HeroTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		49B9DDBC2EC914B800DC72D3 /* Eco HeroUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Eco HeroUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -52,6 +67,16 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				496EC5B22EC9229000B9C3CD /* FirebaseMessaging in Frameworks */,
+				496EC5B02EC9229000B9C3CD /* FirebaseMLModelDownloader in Frameworks */,
+				496EC5BA2EC9229000B9C3CD /* FirebaseStorageCombine-Community in Frameworks */,
+				496EC5C12EC92AE800B9C3CD /* FirebaseFirestore in Frameworks */,
+				496EC5B42EC9229000B9C3CD /* FirebasePerformance in Frameworks */,
+				496EC5BF2EC92AE200B9C3CD /* FirebaseAuth in Frameworks */,
+				496EC5B62EC9229000B9C3CD /* FirebaseRemoteConfig in Frameworks */,
+				496EC5B82EC9229000B9C3CD /* FirebaseStorage in Frameworks */,
+				496EC5AC2EC9229000B9C3CD /* FirebaseInAppMessaging-Beta in Frameworks */,
+				496EC5AE2EC9229000B9C3CD /* FirebaseInstallations in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,6 +97,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		496EC5BD2EC92AE200B9C3CD /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		49B9DD9A2EC914B700DC72D3 = {
 			isa = PBXGroup;
 			children = (
@@ -79,6 +111,8 @@
 				49B9DDB52EC914B800DC72D3 /* Eco HeroTests */,
 				49B9DDBF2EC914B800DC72D3 /* Eco HeroUITests */,
 				49B9DDA42EC914B700DC72D3 /* Products */,
+				496EC5A82EC9219500B9C3CD /* GoogleService-Info.plist */,
+				496EC5BD2EC92AE200B9C3CD /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -112,6 +146,16 @@
 			);
 			name = "Eco Hero";
 			packageProductDependencies = (
+				496EC5AB2EC9229000B9C3CD /* FirebaseInAppMessaging-Beta */,
+				496EC5AD2EC9229000B9C3CD /* FirebaseInstallations */,
+				496EC5AF2EC9229000B9C3CD /* FirebaseMLModelDownloader */,
+				496EC5B12EC9229000B9C3CD /* FirebaseMessaging */,
+				496EC5B32EC9229000B9C3CD /* FirebasePerformance */,
+				496EC5B52EC9229000B9C3CD /* FirebaseRemoteConfig */,
+				496EC5B72EC9229000B9C3CD /* FirebaseStorage */,
+				496EC5B92EC9229000B9C3CD /* FirebaseStorageCombine-Community */,
+				496EC5BE2EC92AE200B9C3CD /* FirebaseAuth */,
+				496EC5C02EC92AE800B9C3CD /* FirebaseFirestore */,
 			);
 			productName = "Eco Hero";
 			productReference = 49B9DDA32EC914B700DC72D3 /* Eco Hero.app */;
@@ -195,6 +239,9 @@
 			);
 			mainGroup = 49B9DD9A2EC914B700DC72D3;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 49B9DDA42EC914B700DC72D3 /* Products */;
 			projectDirPath = "";
@@ -212,6 +259,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				496EC5A92EC9219500B9C3CD /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -322,7 +370,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -380,7 +428,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -462,7 +510,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = UZD4BS94DT;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.rishabh.Eco-HeroTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -484,7 +532,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = UZD4BS94DT;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.rishabh.Eco-HeroTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -578,6 +626,70 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		496EC5AB2EC9229000B9C3CD /* FirebaseInAppMessaging-Beta */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseInAppMessaging-Beta";
+		};
+		496EC5AD2EC9229000B9C3CD /* FirebaseInstallations */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseInstallations;
+		};
+		496EC5AF2EC9229000B9C3CD /* FirebaseMLModelDownloader */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMLModelDownloader;
+		};
+		496EC5B12EC9229000B9C3CD /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+		496EC5B32EC9229000B9C3CD /* FirebasePerformance */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebasePerformance;
+		};
+		496EC5B52EC9229000B9C3CD /* FirebaseRemoteConfig */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfig;
+		};
+		496EC5B72EC9229000B9C3CD /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		496EC5B92EC9229000B9C3CD /* FirebaseStorageCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseStorageCombine-Community";
+		};
+		496EC5BE2EC92AE200B9C3CD /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		496EC5C02EC92AE800B9C3CD /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 496EC5AA2EC9229000B9C3CD /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 49B9DD9B2EC914B700DC72D3 /* Project object */;
 }
