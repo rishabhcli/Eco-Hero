@@ -4,9 +4,6 @@
 
 Eco Hero is a native iOS app that helps users make sustainable choices through activity logging, AI-powered challenges, waste sorting games, and educational content. Built with SwiftUI and powered by Apple Intelligence on iOS 26+, Eco Hero makes eco-friendly living engaging and rewarding.
 
-> **Copyright © 2025 Rishabh Bansal. All Rights Reserved.**
-> This is proprietary software. See [License](#license) section below for usage terms.
-
 ---
 
 ## Features
@@ -61,12 +58,12 @@ Eco Hero is a native iOS app that helps users make sustainable choices through a
 ### Backward Compatibility
 Eco Hero uses runtime availability checks to provide the best experience on every iOS version:
 
-**iOS 26+:**
+**Exclusive iOS 26+ Features:**
 - Full Liquid Glass effects with interactive tinting
-- Apple Intelligence-powered features
+- Apple Intelligence-powered features and suggestions
 - AI activity suggestions, challenge generation, and smart tips
 
-**iOS 18-25:**
+**iOS 18:**
 - Material blur effects (visually similar to Liquid Glass)
 - Static fallback content and legacy CoreML models
 - All core features fully functional
@@ -122,24 +119,16 @@ Eco-Hero/
 ## Build Guide
 
 ### Prerequisites
-- **macOS 15.0+** (Sequoia or later)
-- **Xcode 16.0+**
+- **Minimum: macOS 15.0+ and Xcode 16.0+** (Sequoia or later)
+- **Recommended: macOS 26.0 (Tahoe) and Xcode 26.0+**
 - An iPhone or iPad running **iOS 18.0+** (or use the iOS Simulator)
 
 ### Quick Start
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/risban933/Eco-Hero.git
-   cd Eco-Hero
-   ```
+1. **Click "Code** on the Github.com repo.
 
 2. **Open in Xcode**
-   ```bash
-   open "Eco Hero.xcodeproj"
-   ```
-   Or use **Cmd + O** in Xcode and select `Eco Hero.xcodeproj`
-
+ 
 3. **Select a destination**
    - At the top of Xcode, click the device menu
    - Choose an iOS Simulator (e.g., "iPhone 16") or your connected device
