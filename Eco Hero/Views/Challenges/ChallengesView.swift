@@ -24,7 +24,7 @@ struct ChallengesView: View {
     enum ChallengeTab: String, CaseIterable, Identifiable {
         case active = "Active"
         case available = "Available"
-        case completed = "Completed"
+        case completed = "Done"
 
         var id: String { rawValue }
         var icon: String {
