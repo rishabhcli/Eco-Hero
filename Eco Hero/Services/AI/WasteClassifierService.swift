@@ -48,6 +48,11 @@ final class WasteClassifierService: NSObject {
     private var visionModel: VNCoreMLModel?
     private var classificationRequest: VNCoreMLRequest?
 
+    // MARK: - Rolling Average Properties
+    private var predictionBuffer: [(bin: WasteBin, confidence: Double)] = []
+    private let bufferSize: Int = 15  // ~0.5 seconds at 30fps for smoother results
+    private let stabilityThreshold: Double = 0.6  // Minimum confidence to update display
+
     // MARK: - Initialization
     override init() {
         super.init()
@@ -129,6 +134,8 @@ final class WasteClassifierService: NSObject {
     func startSession() {
         guard authorizationState == .allowed else { return }
         configureSessionIfNeeded()
+        // Clear prediction buffer for fresh start
+        predictionBuffer.removeAll()
         sessionQueue.async {
             if !self.session.isRunning {
                 self.session.startRunning()
@@ -138,6 +145,8 @@ final class WasteClassifierService: NSObject {
 
     @MainActor
     func stopSession() {
+        // Clear prediction buffer when stopping
+        predictionBuffer.removeAll()
         sessionQueue.async {
             if self.session.isRunning {
                 self.session.stopRunning()
@@ -228,8 +237,7 @@ final class WasteClassifierService: NSObject {
         let confidence = Double(topResult.confidence)
 
         Task { @MainActor in
-            self.predictedBin = bin
-            self.confidence = confidence
+            self.updateRollingAverage(newBin: bin, newConfidence: confidence)
         }
     }
 
@@ -250,12 +258,65 @@ final class WasteClassifierService: NSObject {
         }
     }
 
+    // MARK: - Rolling Average Calculation
+    @MainActor
+    private func updateRollingAverage(newBin: WasteBin, newConfidence: Double) {
+        // Add new prediction to buffer
+        predictionBuffer.append((bin: newBin, confidence: newConfidence))
+
+        // Remove oldest if buffer exceeds size
+        if predictionBuffer.count > bufferSize {
+            predictionBuffer.removeFirst()
+        }
+
+        // Need at least a few samples before updating display
+        guard predictionBuffer.count >= 3 else { return }
+
+        // Calculate weighted confidence for each bin type
+        var recycleScore: Double = 0
+        var compostScore: Double = 0
+
+        for prediction in predictionBuffer {
+            switch prediction.bin {
+            case .recycle:
+                recycleScore += prediction.confidence
+            case .compost:
+                compostScore += prediction.confidence
+            }
+        }
+
+        // Determine winning bin and average confidence
+        let totalPredictions = Double(predictionBuffer.count)
+        let averageRecycleConfidence = recycleScore / totalPredictions
+        let averageCompostConfidence = compostScore / totalPredictions
+
+        let winningBin: WasteBin
+        let winningConfidence: Double
+
+        if averageRecycleConfidence > averageCompostConfidence {
+            winningBin = .recycle
+            winningConfidence = averageRecycleConfidence
+        } else {
+            winningBin = .compost
+            winningConfidence = averageCompostConfidence
+        }
+
+        // Only update if we have sufficient confidence or bin changed significantly
+        let shouldUpdate = winningConfidence >= stabilityThreshold ||
+                          winningBin != predictedBin ||
+                          predictionBuffer.count == bufferSize
+
+        if shouldUpdate {
+            self.predictedBin = winningBin
+            self.confidence = winningConfidence
+        }
+    }
+
     // MARK: - Fallback: Color-based Heuristic (Legacy)
     nonisolated private func classifyWithColorHeuristic(pixelBuffer: CVPixelBuffer) {
         guard let color = averageColor(from: pixelBuffer) else {
             Task { @MainActor in
-                self.predictedBin = .recycle
-                self.confidence = 0.0
+                self.updateRollingAverage(newBin: .recycle, newConfidence: 0.0)
             }
             return
         }
@@ -269,9 +330,10 @@ final class WasteClassifierService: NSObject {
             bin = .recycle
         }
 
+        let confidence = Double(max(color.green, color.blue)) * 0.5  // Scale down to indicate lower confidence
+
         Task { @MainActor in
-            self.predictedBin = bin
-            self.confidence = Double(max(color.green, color.blue)) * 0.5  // Scale down to indicate lower confidence
+            self.updateRollingAverage(newBin: bin, newConfidence: confidence)
         }
     }
 

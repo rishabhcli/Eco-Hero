@@ -36,7 +36,7 @@ struct LogActivityView: View {
     }
 
     private var categoryColor: Color {
-        Color(selectedCategory.color)
+        selectedCategory.color
     }
 
     var body: some View {
@@ -147,7 +147,7 @@ struct LogActivityView: View {
                     }
                     .buttonStyle(.plain)
                     .pillStyle(
-                        background: category == selectedCategory ? Color(category.color) : Color(.secondarySystemBackground),
+                        background: category == selectedCategory ? category.color : Color(.secondarySystemBackground),
                         foreground: category == selectedCategory ? .white : .primary
                     )
                 }
@@ -182,7 +182,7 @@ struct LogActivityView: View {
                             selectedActivityType = option
                         }
                     } label: {
-                        ActivityOptionCard(title: option, isSelected: selectedActivityType == option, color: Color(selectedCategory.color))
+                        ActivityOptionCard(title: option, isSelected: selectedActivityType == option, color: selectedCategory.color)
                     }
                     .buttonStyle(.plain)
                 }

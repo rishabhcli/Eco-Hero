@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 enum ActivityCategory: String, Codable, CaseIterable {
     case meals = "Meals"
@@ -28,15 +29,15 @@ enum ActivityCategory: String, Codable, CaseIterable {
         }
     }
 
-    var color: String {
+    var color: Color {
         switch self {
-        case .meals: return "green"
-        case .transport: return "blue"
-        case .plastic: return "orange"
-        case .energy: return "yellow"
-        case .water: return "cyan"
-        case .lifestyle: return "mint"
-        case .other: return "purple"
+        case .meals: return .green
+        case .transport: return .blue
+        case .plastic: return .orange
+        case .energy: return .yellow
+        case .water: return .cyan
+        case .lifestyle: return .mint
+        case .other: return .purple
         }
     }
 }

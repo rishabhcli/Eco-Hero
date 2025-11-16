@@ -335,10 +335,10 @@ struct ActivityRowView: View {
         HStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(Color(activity.category.color).opacity(0.15))
+                    .fill(activity.category.color.opacity(0.15))
                     .frame(width: 48, height: 48)
                 Image(systemName: activity.category.icon)
-                    .foregroundStyle(Color(activity.category.color))
+                    .foregroundStyle(activity.category.color)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -356,7 +356,7 @@ struct ActivityRowView: View {
                     .font(.caption)
                     .padding(.vertical, 4)
                     .padding(.horizontal, 8)
-                    .background(Color(activity.category.color).opacity(0.15), in: Capsule())
+                    .background(activity.category.color.opacity(0.15), in: Capsule())
             }
         }
         .padding()

@@ -163,9 +163,9 @@ struct CategoryTipCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: category.icon)
                     .font(.title2)
-                    .foregroundStyle(Color(category.color))
+                    .foregroundStyle(category.color)
                     .padding(12)
-                    .background(Color(category.color).opacity(0.15), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(category.color.opacity(0.15), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 Text(category.rawValue)
                     .font(.headline)
                 Text("Explore tips and actions")
@@ -214,7 +214,7 @@ struct CategoryTipsDetailView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Image(systemName: category.icon)
                         .font(.system(size: 48))
-                        .foregroundStyle(Color(category.color))
+                        .foregroundStyle(category.color)
                     Text(category.rawValue)
                         .font(.largeTitle.bold())
                     Text("Tips and information about \(category.rawValue.lowercased())")
@@ -223,7 +223,7 @@ struct CategoryTipsDetailView: View {
                 }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(category.color).opacity(0.12))
+                .background(category.color.opacity(0.12))
                 .cornerRadius(24)
 
                 if let tip = AppConstants.EcoTips.tip(for: category) {

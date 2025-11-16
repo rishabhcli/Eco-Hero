@@ -365,7 +365,7 @@ struct ChallengeCardView: View {
 
     private var tint: Color {
         if let category = challenge.category {
-            return Color(category.color)
+            return category.color
         }
         return Color.ecoGreen
     }
@@ -438,7 +438,7 @@ struct AvailableChallengeCardView: View {
 
     private var tint: Color {
         if let category = challenge.category {
-            return Color(category.color)
+            return category.color
         }
         return Color.ecoGreen
     }
