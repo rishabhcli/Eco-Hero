@@ -14,7 +14,8 @@ struct LearnView: View {
     @State private var selectedCategory: ActivityCategory = .meals
     @State private var smartTip: String?
     @State private var factOfDay: String = AppConstants.EducationalFacts.randomFact()
-    @Namespace private var glassNamespace
+    @State private var scrollOffset: CGFloat = 0
+    @State private var isRefreshing = false
 
     var body: some View {
         Group {
@@ -31,88 +32,144 @@ struct LearnView: View {
 
     private var content: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: AppConstants.Layout.sectionSpacing) {
+            VStack(spacing: 20) {
                 dailyFactCard
+                    .offset(y: scrollOffset * 0.2)
+                    .bounceIn(delay: 0.1)
+
                 tipsSection
+                    .bounceIn(delay: 0.2)
 
                 // Apple Intelligence feature - only show on iOS 26+
                 if #available(iOS 26, *) {
                     smartTipSection
+                        .bounceIn(delay: 0.3)
                 }
 
                 allFactsSection
+                    .bounceIn(delay: 0.4)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
-            .padding(.bottom, 40)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
+            .readScrollOffset(into: $scrollOffset)
         }
+        .coordinateSpace(name: "scroll")
         .background(
-            LinearGradient(
-                colors: colorScheme == .dark
-                    ? [Color.green.opacity(0.3), Color.black]
-                    : [Color.green.opacity(0.15), Color.white],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            ZStack {
+                Color(.systemGroupedBackground)
+
+                // Bold floating orbs
+                FloatingOrbsBackground(
+                    orbCount: 6,
+                    colors: [
+                        Color.green.opacity(0.2),
+                        Color(hex: "16A34A").opacity(0.15),
+                        Color(hex: "22C55E").opacity(0.12)
+                    ]
+                )
+
+                // Bold floating leaves ambient effect
+                FloatingLeafView(leafCount: 10, colors: [
+                    Color(hex: "16A34A"),
+                    Color(hex: "22C55E"),
+                    Color(hex: "4ADE80")
+                ])
+                .opacity(0.6)
+            }
             .ignoresSafeArea()
         )
     }
 
     private var dailyFactCard: some View {
-        GlassEffectContainer(spacing: 0) {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Label("Eco fact of the day", systemImage: "globe.asia.australia.fill")
-                        .font(.headline)
-                    Spacer()
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                HStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: "16A34A").opacity(0.2))
+                            .frame(width: 32, height: 32)
+                            .blur(radius: 4)
+
+                        Image(systemName: "globe.americas.fill")
+                            .font(.body)
+                            .foregroundStyle(Color(hex: "16A34A"))
+                            .symbolEffect(.bounce, value: isRefreshing)
+                    }
+
+                    Text("Eco Fact of the Day")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color(hex: "16A34A"))
+                }
+                Spacer()
+                Group {
                     if #available(iOS 26, *) {
                         Button {
-                            withAnimation(.spring) {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                isRefreshing.toggle()
                                 factOfDay = AppConstants.EducationalFacts.randomFact()
                             }
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath")
+                            Image(systemName: "arrow.clockwise")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Color(hex: "16A34A"))
+                                .padding(8)
+                                .rotationEffect(.degrees(isRefreshing ? 360 : 0))
                         }
-                        .buttonStyle(.glass(.regular.interactive()))
-                        .glassEffectID("refresh-fact", in: glassNamespace)
+                        .buttonStyle(.glass(.regular.tint(Color(hex: "16A34A").opacity(0.3)).interactive()))
                     } else {
                         Button {
-                            withAnimation(.spring) {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                isRefreshing.toggle()
                                 factOfDay = AppConstants.EducationalFacts.randomFact()
                             }
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath")
+                            Image(systemName: "arrow.clockwise")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Color(hex: "16A34A"))
+                                .padding(8)
+                                .background(Color(hex: "16A34A").opacity(0.15), in: Circle())
+                                .rotationEffect(.degrees(isRefreshing ? 360 : 0))
                         }
-                        .buttonStyle(.compatibleGlass(cornerRadius: 16, interactive: true))
                     }
                 }
-
-                Text(factOfDay)
-                    .font(.body)
-                    .foregroundStyle(.white)
-
-                Text("Share this insight with a friend today.")
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.9))
             }
-            .padding(24)
-            .compatibleGlassEffect(
-                tintColor: Color.ecoGreen.opacity(0.4),
-                cornerRadius: 28,
-                interactive: false
-            )
-            .compatibleGlassEffectID("daily-fact", in: glassNamespace)
+
+            Text(factOfDay)
+                .font(.body)
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .contentTransition(.opacity)
         }
-        .shadow(color: Color.black.opacity(0.2), radius: 24, x: 0, y: 12)
+        .padding(16)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: "DCFCE7"), Color(hex: "D1FAE5")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+
+                // Subtle inner glow
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color(hex: "16A34A").opacity(0.2), lineWidth: 1)
+            }
+        )
+        .shadow(color: Color(hex: "16A34A").opacity(0.15), radius: 8, x: 0, y: 4)
     }
 
     private var tipsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Guided topics")
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Topics")
                 .font(.headline)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 16)], spacing: 16) {
-                ForEach(ActivityCategory.allCases, id: \.self) { category in
-                    CategoryTipCard(category: category)
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                ForEach(Array(ActivityCategory.allCases.enumerated()), id: \.element) { index, category in
+                    EnhancedCategoryTipCard(category: category, index: index)
                 }
             }
         }
@@ -120,10 +177,11 @@ struct LearnView: View {
 
     @available(iOS 26, *)
     private var smartTipSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Smart tip generator")
+                Label("AI Tip Generator", systemImage: "sparkles")
                     .font(.headline)
+                    .foregroundStyle(Color(hex: "2563EB"))
                 Spacer()
                 if tipModel.isGenerating {
                     ProgressView()
@@ -131,55 +189,64 @@ struct LearnView: View {
                 }
             }
 
-            Picker("Focus Area", selection: $selectedCategory) {
-                ForEach(ActivityCategory.allCases, id: \.self) { category in
-                    Text(category.rawValue)
-                        .tag(category)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(ActivityCategory.allCases, id: \.self) { category in
+                        Button {
+                            selectedCategory = category
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        } label: {
+                            Text(category.rawValue)
+                                .font(.caption.weight(.medium))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .foregroundStyle(selectedCategory == category ? .white : .primary)
+                        }
+                        .buttonStyle(.glass(
+                            selectedCategory == category
+                                ? .regular.tint(Color(hex: "2563EB").opacity(0.8)).interactive()
+                                : .regular.tint(.gray.opacity(0.2)).interactive()
+                        ))
+                    }
                 }
             }
-            .pickerStyle(.segmented)
 
             VStack(alignment: .leading, spacing: 8) {
                 if tipModel.isGenerating && !tipModel.streamedTip.isEmpty {
                     Text(tipModel.streamedTip)
-                        .font(.body)
+                        .font(.subheadline)
                         .foregroundStyle(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .animation(.easeInOut(duration: 0.1), value: tipModel.streamedTip)
                 } else if let tip = smartTip, !tip.isEmpty {
                     Text(tip)
-                        .font(.body)
+                        .font(.subheadline)
                         .foregroundStyle(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    Text("Tap below to generate an AI-powered tip using Apple Intelligence.")
-                        .font(.body)
+                    Text("Tap Generate to get an AI-powered sustainability tip.")
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            .padding()
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .frame(minHeight: 80)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+            .frame(minHeight: 60)
 
-            GlassEffectContainer(spacing: 0) {
-                Button(action: generateSmartTip) {
-                    Label(
-                        tipModel.isGenerating ? "Generating..." : "Generate Smart Tip",
-                        systemImage: tipModel.isGenerating ? "sparkles" : "bolt.fill"
-                    )
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .foregroundStyle(.white)
-                }
-                .buttonStyle(.glass(.regular.tint(AppConstants.Colors.ocean.opacity(0.6)).interactive()))
-                .glassEffectID("generate-tip", in: glassNamespace)
-                .disabled(tipModel.isGenerating)
-                .opacity(tipModel.isGenerating ? 0.7 : 1.0)
+            Button(action: generateSmartTip) {
+                Label(
+                    tipModel.isGenerating ? "Generating..." : "Generate Tip",
+                    systemImage: tipModel.isGenerating ? "ellipsis" : "sparkles"
+                )
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .foregroundStyle(.white)
             }
+            .buttonStyle(.glass(.regular.tint(Color(hex: "2563EB").opacity(0.9)).interactive()))
+            .disabled(tipModel.isGenerating)
+            .opacity(tipModel.isGenerating ? 0.7 : 1.0)
         }
-        .cardStyle()
+        .padding(16)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 16))
         .onAppear {
             if smartTip == nil {
                 smartTip = tipModel.generateTip(for: selectedCategory)
@@ -188,12 +255,19 @@ struct LearnView: View {
     }
 
     private var allFactsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Eco knowledge library")
-                .font(.headline)
-            LazyVStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Eco Knowledge")
+                    .font(.headline)
+                Spacer()
+                Text("\(AppConstants.EducationalFacts.facts.count) facts")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            LazyVStack(spacing: 10) {
                 ForEach(Array(AppConstants.EducationalFacts.facts.enumerated()), id: \.offset) { index, fact in
-                    FactCard(fact: fact, number: index + 1)
+                    EnhancedFactCard(fact: fact, number: index + 1, index: index)
                 }
             }
         }
@@ -215,23 +289,99 @@ struct CategoryTipCard: View {
         NavigationLink(destination: CategoryTipsDetailView(category: category)) {
             VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: category.icon)
-                    .font(.title2)
+                    .font(.body)
                     .foregroundStyle(category.color)
-                    .padding(12)
-                    .background(category.color.opacity(0.15), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .padding(10)
+                    .background(category.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+
                 Text(category.rawValue)
-                    .font(.headline)
-                Text("Explore tips and actions")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                Text("Learn more")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(AppConstants.Layout.cardCornerRadius)
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
+            .padding(14)
+            .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(.plain)
+    }
+}
+
+struct EnhancedCategoryTipCard: View {
+    let category: ActivityCategory
+    let index: Int
+    @Namespace private var glassNamespace
+
+    @State private var isVisible = false
+    @State private var isPressed = false
+    @State private var isHovered = false
+
+    var body: some View {
+        NavigationLink(destination: CategoryTipsDetailView(category: category)) {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack {
+                    // Glow behind icon
+                    Circle()
+                        .fill(category.color.opacity(0.2))
+                        .frame(width: 44, height: 44)
+                        .blur(radius: 8)
+                        .scaleEffect(isHovered ? 1.3 : 1.0)
+
+                    Image(systemName: category.icon)
+                        .font(.body)
+                        .foregroundStyle(category.color)
+                        .padding(10)
+                        .background(category.color.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+                        .symbolEffect(.bounce, value: isVisible)
+                }
+
+                Text(category.rawValue)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                HStack(spacing: 4) {
+                    Text("Learn more")
+                        .font(.caption)
+                        .foregroundStyle(category.color)
+                    Image(systemName: "arrow.right")
+                        .font(.caption2)
+                        .foregroundStyle(category.color)
+                        .offset(x: isHovered ? 3 : 0)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+        }
+        .modifier(CategoryCardStyleModifier(category: category, isPressed: isPressed, glassNamespace: glassNamespace))
+        .scaleEffect(isPressed ? 0.97 : 1)
+        .opacity(isVisible ? 1 : 0)
+        .offset(y: isVisible ? 0 : 15)
+        .onTapGesture {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                isPressed = true
+            }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    isPressed = false
+                }
+            }
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(Double(index) * 0.08)) {
+                isVisible = true
+            }
+        }
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isHovered = hovering
+            }
+        }
     }
 }
 
@@ -240,21 +390,140 @@ struct FactCard: View {
     let number: Int
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text("#\(number)")
-                .font(.caption.bold())
-                .padding(10)
-                .background(Color.ecoGreen.opacity(0.15), in: Circle())
+        HStack(alignment: .top, spacing: 12) {
+            Text("\(number)")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color(hex: "16A34A"))
+                .frame(width: 24, height: 24)
+                .background(Color(hex: "DCFCE7"), in: Circle())
+
             Text(fact)
-                .font(.body)
+                .font(.subheadline)
                 .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
-            Spacer()
+
+            Spacer(minLength: 0)
         }
-        .padding()
-        .background(Color(.systemBackground))
-        .cornerRadius(AppConstants.Layout.cardCornerRadius)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
+        .padding(14)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+struct EnhancedFactCard: View {
+    let fact: String
+    let number: Int
+    let index: Int
+
+    @State private var isVisible = false
+    @State private var isExpanded = false
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                // Glow behind number
+                Circle()
+                    .fill(Color(hex: "16A34A").opacity(0.2))
+                    .frame(width: 32, height: 32)
+                    .blur(radius: 6)
+
+                Text("\(number)")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color(hex: "16A34A"))
+                    .frame(width: 26, height: 26)
+                    .background(
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(hex: "DCFCE7"), Color(hex: "BBF7D0")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    )
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(fact)
+                    .font(.subheadline)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(isExpanded ? nil : 2)
+
+                if fact.count > 80 {
+                    Button {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                            isExpanded.toggle()
+                        }
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    } label: {
+                        Text(isExpanded ? "Show less" : "Read more")
+                            .font(.caption)
+                            .foregroundStyle(Color(hex: "16A34A"))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                    }
+                    .modifier(ReadMoreButtonStyleModifier())
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(14)
+        .popCard(cornerRadius: 14, background: Color(.systemBackground))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color(hex: "16A34A").opacity(0.1), lineWidth: 1)
+        )
+        .opacity(isVisible ? 1 : 0)
+        .offset(x: isVisible ? 0 : -15)
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(Double(index) * 0.05)) {
+                isVisible = true
+            }
+        }
+    }
+}
+
+private struct CategoryCardStyleModifier: ViewModifier {
+    let category: ActivityCategory
+    let isPressed: Bool
+    let glassNamespace: Namespace.ID
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .buttonStyle(.plain)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color(.systemBackground).opacity(0.6))
+                )
+                .glassEffect(
+                    .regular.tint(category.color.opacity(0.1)).interactive(),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                )
+                .glassEffectID("category-\(category.rawValue)", in: glassNamespace)
+        } else {
+            content
+                .buttonStyle(.plain)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 4)
+                        .shadow(color: isPressed ? category.color.opacity(0.3) : .clear, radius: 12, x: 0, y: 6)
+                )
+        }
+    }
+}
+
+private struct ReadMoreButtonStyleModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .buttonStyle(.glass(.regular.tint(Color(hex: "16A34A").opacity(0.2)).interactive()))
+        } else {
+            content
+                .background(Color(hex: "16A34A").opacity(0.1), in: Capsule())
+        }
     }
 }
 
@@ -263,51 +532,58 @@ struct CategoryTipsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 20) {
+                // Header
                 VStack(alignment: .leading, spacing: 12) {
                     Image(systemName: category.icon)
-                        .font(.system(size: 48))
+                        .font(.system(size: 40))
                         .foregroundStyle(category.color)
+                        .padding(16)
+                        .background(category.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
+
                     Text(category.rawValue)
-                        .font(.largeTitle.bold())
+                        .font(.title.bold())
+
                     Text("Tips and information about \(category.rawValue.lowercased())")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(category.color.opacity(0.12))
-                .cornerRadius(24)
 
+                // Main tip
                 if let tip = AppConstants.EcoTips.tip(for: category) {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text(tip.title)
-                            .font(.title2.bold())
+                            .font(.headline)
                         Text(tip.description)
-                            .font(.body)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                    .cardStyle()
+                    .padding(16)
+                    .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 16))
                 }
 
-                VStack(alignment: .leading, spacing: 16) {
+                // Facts section
+                VStack(alignment: .leading, spacing: 12) {
                     Text("Did you know?")
                         .font(.headline)
-                    ForEach(Array(AppConstants.EducationalFacts.facts.prefix(3).enumerated()), id: \.offset) { index, fact in
+
+                    ForEach(Array(AppConstants.EducationalFacts.facts.prefix(3).enumerated()), id: \.offset) { _, fact in
                         HStack(alignment: .top, spacing: 12) {
                             Image(systemName: "lightbulb.fill")
-                                .foregroundStyle(.yellow)
+                                .font(.caption)
+                                .foregroundStyle(Color(hex: "F59E0B"))
+                                .padding(6)
+                                .background(Color(hex: "FEF3C7"), in: Circle())
                             Text(fact)
                                 .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.primary)
                         }
-                        .padding()
-                        .background(Color(.systemBackground))
-                        .cornerRadius(16)
+                        .padding(14)
+                        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
                     }
                 }
             }
-            .padding()
+            .padding(16)
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(category.rawValue)

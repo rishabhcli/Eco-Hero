@@ -14,38 +14,38 @@ import FoundationModels
 @available(iOS 26, *)
 @Generable
 struct iOS26ActivityIdea {
-    @Guide(description: "A concise action label like 'Walk to the store' or 'Prep veggie lunch'.")
+    @Guide(description: "A punchy, action-oriented label (2-5 words) that feels fresh and specific. Examples: 'Morning bike commute', 'Zero-waste grocery run', 'Plant-based dinner party'. Avoid generic phrases.")
     var actionTitle: String
 
-    @Guide(description: "One sentence describing what to log, tailored to the Eco Hero categories.")
+    @Guide(description: "A vivid one-sentence description that paints a picture of the eco-action. Be specific about the context and make it feel achievable today.")
     var activityDescription: String
 
-    @Guide(description: "A motivating note referencing impact (CO₂, water, waste).")
+    @Guide(description: "An inspiring fact or motivating note that connects the action to real environmental impact. Include a specific stat when possible (e.g., 'saves 2kg CO₂' or 'conserves 50L water').")
     var motivation: String
 }
 
 @available(iOS 26, *)
 @Generable
 struct iOS26ChallengeBlueprint {
-    @Guide(description: "Snappy mission title fewer than 5 words.")
+    @Guide(description: "A catchy, memorable mission title (2-5 words) that sounds exciting and game-like. Examples: 'Plastic Detox Sprint', 'Green Commuter Quest', 'Veggie Victory Week'.")
     var title: String
 
-    @Guide(description: "One sentence challenge summary.")
+    @Guide(description: "An engaging one-sentence description that makes the challenge feel fun and achievable. Include the specific goal and timeframe.")
     var summary: String
 
-    @Guide(description: "One of: daily, weekly, milestone.")
+    @Guide(description: "Challenge duration: 'daily' for single-day focus, 'weekly' for 7-day streaks, or 'milestone' for cumulative achievements.")
     var cadence: String
 
-    @Guide(description: "Eco category focus such as Meals, Transport, Plastic, Energy, Water, Lifestyle.")
+    @Guide(description: "Primary eco category: Meals (food choices), Transport (commuting), Plastic (waste reduction), Energy (power saving), Water (conservation), or Lifestyle (general eco-habits).")
     var category: String
 
-    @Guide(description: "SF Symbol name that fits the mission.")
+    @Guide(description: "An SF Symbol name that visually represents the challenge theme. Examples: 'leaf.fill', 'bicycle', 'drop.fill', 'bolt.fill', 'bag.fill', 'tram.fill'.")
     var symbolName: String
 
-    @Guide(description: "Number of actions needed (1-14).", .range(1...14))
+    @Guide(description: "Number of actions required to complete the challenge (1-14). Make it ambitious but achievable.", .range(1...14))
     var targetCount: Int
 
-    @Guide(description: "XP reward between 10 and 250.", .range(10...250))
+    @Guide(description: "XP reward reflecting difficulty and duration. Daily: 50-100, Weekly: 150-250, Milestone: 100-200.", .range(10...250))
     var rewardXP: Int
 }
 
@@ -73,13 +73,27 @@ final class FoundationContentService {
         if #available(iOS 26, *) {
             let session = LanguageModelSession(
                 instructions: """
-                You are part of the Eco Hero app on iOS 26. Use upbeat eco language.
-                Suggest log activities with clear motivation and respect the selected category.
+                You are the creative eco-coach inside Eco Hero, a fun sustainability app. Your personality is:
+                - Enthusiastic but not preachy
+                - Specific and actionable (not vague)
+                - Focused on small wins that feel achievable TODAY
+                - Aware of real environmental impact stats
+
+                When suggesting activities:
+                - Make them feel fresh and creative, not obvious
+                - Reference seasons, time of day, or social context when relevant
+                - Include specific impact numbers when motivating users
+                - Vary your suggestions - don't always suggest the same things
                 """
             )
 
+            let categoryContext = categoryContextDescription(for: category)
             let prompt = """
-            Create a fresh log idea for the \(category.rawValue) category. Keep it actionable and motivating.
+            Create an inspiring \(category.rawValue) activity idea for someone looking to make a positive environmental impact today.
+
+            Context: \(categoryContext)
+
+            Make it creative, specific, and motivating!
             """
             let ios26Idea = try await session.respond(
                 to: prompt,
@@ -93,7 +107,6 @@ final class FoundationContentService {
                 motivation: ios26Idea.motivation
             )
         } else {
-            // Fallback - should never happen as canImport guards this
             throw NSError(domain: "FoundationContent", code: 1,
                          userInfo: [NSLocalizedDescriptionKey: "FoundationModels not available"])
         }
@@ -103,14 +116,27 @@ final class FoundationContentService {
         if #available(iOS 26, *) {
             let session = LanguageModelSession(
                 instructions: """
-                Generate sustainability challenges for Eco Hero players.
-                Challenges should feel game-like with clear cadence (daily/weekly/milestone).
-                Include SF Symbol references and realistic target counts.
+                You are the mission designer for Eco Hero, a gamified sustainability app. Your role is to create exciting eco-challenges that feel like quests in a game.
+
+                Design principles:
+                - Titles should be catchy and memorable (think video game quest names)
+                - Challenges should feel achievable but meaningful
+                - Vary difficulty: some easy daily wins, some ambitious weekly goals
+                - Include creative themes: streaks, detox challenges, exploration quests
+                - Balance across categories: food, transport, plastic, energy, water, lifestyle
+
+                SF Symbols to consider: leaf.fill, bicycle, tram.fill, drop.fill, bolt.fill, bag.fill, flame.fill, star.fill, trophy.fill, target
                 """
             )
 
+            let themes = ["eco streak", "sustainability sprint", "green challenge", "planet-friendly quest", "environmental adventure"]
+            let randomTheme = themes.randomElement() ?? "eco challenge"
+
             let prompt = """
-            Create a new Eco Hero mission. Keep it inspiring and vary the cadence and category.
+            Design an exciting new Eco Hero mission! Think of it as a \(randomTheme) that will engage users and make sustainability fun.
+
+            Mix up the cadence (daily for quick wins, weekly for sustained effort, milestone for big achievements).
+            Make the title memorable and the goal clear!
             """
             let ios26Blueprint = try await session.respond(
                 to: prompt,
@@ -128,9 +154,27 @@ final class FoundationContentService {
                 rewardXP: ios26Blueprint.rewardXP
             )
         } else {
-            // Fallback - should never happen as canImport guards this
             throw NSError(domain: "FoundationContent", code: 1,
                          userInfo: [NSLocalizedDescriptionKey: "FoundationModels not available"])
+        }
+    }
+
+    private func categoryContextDescription(for category: ActivityCategory) -> String {
+        switch category {
+        case .meals:
+            return "Food choices - plant-based meals, local produce, reducing food waste, sustainable cooking"
+        case .transport:
+            return "Getting around - biking, walking, public transit, carpooling, reducing car trips"
+        case .plastic:
+            return "Reducing plastic - reusables, avoiding single-use items, package-free shopping"
+        case .energy:
+            return "Saving power - LED bulbs, unplugging devices, energy-efficient habits"
+        case .water:
+            return "Water conservation - shorter showers, fixing leaks, efficient appliances"
+        case .lifestyle:
+            return "General eco-habits - recycling, composting, mindful consumption, nature connection"
+        case .other:
+            return "Any eco-friendly action that helps the planet"
         }
     }
 }

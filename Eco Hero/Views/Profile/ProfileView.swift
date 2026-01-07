@@ -19,6 +19,8 @@ struct ProfileView: View {
 
     @State private var showingSettings = false
     @State private var showingLogoutAlert = false
+    @State private var scrollOffset: CGFloat = 0
+    @State private var showSparkles = false
 
     private var userProfile: UserProfile? {
         profiles.first { $0.userIdentifier == authManager.currentUserID ?? "" }
@@ -40,6 +42,8 @@ struct ProfileView: View {
                                     showingSettings = true
                                 } label: {
                                     Image(systemName: "gearshape")
+                                        .font(.body.weight(.medium))
+                                        .symbolEffect(.bounce, value: showingSettings)
                                 }
                             }
                         }
@@ -63,207 +67,258 @@ struct ProfileView: View {
 
     private var content: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: AppConstants.Layout.sectionSpacing) {
+            VStack(spacing: 20) {
                 profileHeader
-                statsOverview
+                    .bounceIn(delay: 0.1)
+                statsGrid
                 achievementsSummary
-                activityHistory
-                settingsSection
+                activityBreakdown
+                accountSection
+                    .bounceIn(delay: 0.4)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 30)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
         }
         .background(
-            LinearGradient(
-                colors: colorScheme == .dark
-                    ? [Color.green.opacity(0.3), Color.black]
-                    : [Color.green.opacity(0.15), Color.white],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            ZStack {
+                Color(.systemGroupedBackground)
+
+                // Animated floating orbs background
+                FloatingOrbsBackground(
+                    orbCount: 4,
+                    colors: [
+                        Color(hex: "16A34A").opacity(0.15),
+                        Color(hex: "0EA5E9").opacity(0.1),
+                        Color(hex: "22C55E").opacity(0.12)
+                    ]
+                )
+            }
             .ignoresSafeArea()
         )
     }
 
+    // MARK: - Profile Header
     private var profileHeader: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .center, spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(AppConstants.Gradients.accent)
-                        .frame(width: 90, height: 90)
-                    Text(userProfile?.displayName.prefix(1).uppercased() ?? "E")
-                        .font(.system(size: 38, weight: .bold))
-                        .foregroundStyle(.white)
+        VStack(spacing: 16) {
+            // Animated Avatar with glow ring
+            EnhancedAvatarView(
+                initial: userProfile?.displayName.prefix(1).uppercased() ?? "E",
+                level: userProfile?.currentLevel ?? 1,
+                xpProgress: userProfile.map {
+                    $0.experiencePoints / Double(max($0.currentLevel * 100, 1))
+                } ?? 0
+            )
+
+            // Name and Level
+            VStack(spacing: 4) {
+                Text(userProfile?.displayName ?? "Eco Hero")
+                    .font(.title2.bold())
+                    .foregroundStyle(.primary)
+                    .contentTransition(.numericText())
+
+                if let profile = userProfile {
+                    Text(AppConstants.Levels.levelTitle(for: profile.currentLevel))
+                        .font(.subheadline)
+                        .foregroundStyle(Color(hex: "16A34A"))
                 }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(userProfile?.displayName ?? "Eco Hero")
-                        .font(.title2.bold())
-                        .foregroundStyle(.white)
-                    if let profile = userProfile {
-                        Text(AppConstants.Levels.levelTitle(for: profile.currentLevel))
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.9))
-                    }
-                    if let email = authManager.currentUserEmail {
-                        Text(email)
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.85))
-                    }
+
+                if let email = authManager.currentUserEmail {
+                    Text(email)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                Spacer()
             }
 
+            // Enhanced Level Progress with shimmer
             if let profile = userProfile {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(spacing: 8) {
                     HStack {
                         Text("Level \(profile.currentLevel)")
-                            .font(.footnote.bold())
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 12)
-                            .background(Color.white.opacity(0.2), in: Capsule())
-                        Text("\(profile.streak) day streak")
-                            .font(.footnote)
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 12)
-                            .background(Color.white.opacity(0.12), in: Capsule())
+                            .font(.caption.weight(.semibold))
+                            .contentTransition(.numericText())
+                        Spacer()
+                        Text("\(Int(profile.experiencePoints)) / \(profile.currentLevel * 100) XP")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .contentTransition(.numericText())
                     }
 
-                    ProgressView(value: profile.experiencePoints, total: Double(max(profile.currentLevel * 100, 1)))
-                        .tint(.white)
-
-                    Text("XP \(Int(profile.experiencePoints)) of \(profile.currentLevel * 100)")
-                        .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.9))
+                    EnhancedProfileXPBar(
+                        progress: min(profile.experiencePoints / Double(max(profile.currentLevel * 100, 1)), 1.0)
+                    )
                 }
+                .padding(.horizontal, 20)
             }
         }
-        .padding(24)
-        .background(
-            LinearGradient(
-                colors: [AppConstants.Colors.evergreen, AppConstants.Colors.ocean],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-        )
-        .shadow(color: Color.black.opacity(0.25), radius: 20, x: 0, y: 10)
+        .padding(20)
+        .popCard(cornerRadius: 24, background: Color(.systemBackground))
     }
 
-    private var statsOverview: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Impact snapshots")
+    // MARK: - Stats Grid
+    private var statsGrid: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Statistics")
                 .font(.headline)
+                .foregroundStyle(.primary)
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                ProfileStatCard(
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                EnhancedProfileStatCard(
+                    title: "Current Streak",
+                    value: Double(userProfile?.streak ?? 0),
+                    unit: "days",
+                    icon: "flame.fill",
+                    color: Color(hex: "F97316"),
+                    index: 0
+                )
+
+                EnhancedProfileStatCard(
+                    title: "Total Activities",
+                    value: Double(activities.count),
+                    unit: "logged",
+                    icon: "checkmark.circle.fill",
+                    color: Color(hex: "16A34A"),
+                    index: 1
+                )
+
+                EnhancedProfileStatCard(
                     title: "CO₂ Saved",
                     value: userProfile?.totalCarbonSavedKg ?? 0,
                     unit: "kg",
                     icon: "cloud.fill",
-                    tint: .green
+                    color: Color(hex: "22C55E"),
+                    index: 2
                 )
 
-                ProfileStatCard(
+                EnhancedProfileStatCard(
                     title: "Water Saved",
                     value: userProfile?.totalWaterSavedLiters ?? 0,
-                    unit: "L",
+                    unit: "liters",
                     icon: "drop.fill",
-                    tint: .blue
-                )
-
-                ProfileStatCard(
-                    title: "Activities",
-                    value: Double(activities.count),
-                    unit: "total",
-                    icon: "checkmark.circle.fill",
-                    tint: .indigo
-                )
-
-                ProfileStatCard(
-                    title: "Longest streak",
-                    value: Double(userProfile?.longestStreak ?? 0),
-                    unit: "days",
-                    icon: "flame.fill",
-                    tint: .orange
+                    color: Color(hex: "0EA5E9"),
+                    index: 3
                 )
             }
         }
     }
 
+    // MARK: - Achievements
     private var achievementsSummary: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Badges")
+                Text("Achievements")
                     .font(.headline)
                 Spacer()
                 NavigationLink("View All") {
                     AchievementsListView()
                 }
-                .font(.footnote.bold())
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Color(hex: "16A34A"))
             }
 
             if unlockedAchievements.isEmpty {
-                EmptyStateView(icon: "sparkles", title: "No badges yet", message: "Complete challenges to start your badge collection.")
+                VStack(spacing: 8) {
+                    ZStack {
+                        // Glow ring
+                        Circle()
+                            .fill(Color.yellow.opacity(0.1))
+                            .frame(width: 80, height: 80)
+                            .blur(radius: 12)
+
+                        Image(systemName: "trophy")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.secondary)
+                            .symbolEffect(.pulse, options: .repeating.speed(0.5), value: true)
+                    }
+
+                    Text("No achievements yet")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("Complete challenges to earn badges")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .popCard(cornerRadius: 16, background: Color(.systemBackground))
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 20) {
-                        ForEach(unlockedAchievements.prefix(10)) { achievement in
-                            AchievementBadgeView(achievement: achievement)
+                    HStack(spacing: 16) {
+                        ForEach(Array(unlockedAchievements.prefix(6).enumerated()), id: \.element.id) { index, achievement in
+                            EnhancedAchievementBadge(achievement: achievement, index: index)
                         }
                     }
                     .padding(.vertical, 8)
                 }
             }
         }
+        .bounceIn(delay: 0.2)
     }
 
-    private var activityHistory: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Recent Activity")
-                    .font(.headline)
-                Spacer()
-                NavigationLink("View All") {
-                    ActivitiesListView()
-                }
-                .font(.footnote.bold())
-            }
+    // MARK: - Activity Breakdown
+    private var activityBreakdown: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Activity Breakdown")
+                .font(.headline)
 
-            if activities.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "leaf.circle")
-                        .font(.system(size: 48))
-                        .foregroundStyle(.secondary)
+            let categoryCounts = Dictionary(grouping: activities, by: { $0.category })
+                .mapValues { $0.count }
+                .sorted { $0.value > $1.value }
 
-                    Text("No activities yet")
+            if categoryCounts.isEmpty {
+                VStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.1))
+                            .frame(width: 80, height: 80)
+                            .blur(radius: 12)
+
+                        Image(systemName: "chart.pie")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.secondary)
+                            .symbolEffect(.pulse, options: .repeating.speed(0.5), value: true)
+                    }
+
+                    Text("Log activities to see breakdown")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 32)
-                .cardStyle()
+                .padding(.vertical, 24)
+                .popCard(cornerRadius: 16, background: Color(.systemBackground))
             } else {
-                VStack(spacing: 12) {
-                    ForEach(Array(activities.prefix(4))) { activity in
-                        ActivityRowView(activity: activity)
+                VStack(spacing: 0) {
+                    ForEach(Array(categoryCounts.prefix(5).enumerated()), id: \.element.key) { index, element in
+                        EnhancedCategoryRow(
+                            category: element.key,
+                            count: element.value,
+                            total: activities.count,
+                            index: index
+                        )
+                        if element.key != categoryCounts.prefix(5).last?.key {
+                            Divider().padding(.leading, 48)
+                        }
                     }
                 }
+                .popCard(cornerRadius: 16, background: Color(.systemBackground))
             }
         }
+        .bounceIn(delay: 0.3)
     }
 
-    private var settingsSection: some View {
+    // MARK: - Account Section
+    private var accountSection: some View {
         VStack(spacing: 0) {
             Button {
                 showingSettings = true
             } label: {
                 HStack {
-                    Label("Preferences", systemImage: "gearshape")
+                    Label("Settings", systemImage: "gearshape")
+                        .foregroundStyle(.primary)
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.tertiary)
                 }
                 .padding(.vertical, 14)
             }
@@ -275,16 +330,16 @@ struct ProfileView: View {
                 showingLogoutAlert = true
             } label: {
                 HStack {
-                    Label("Sign Out", systemImage: "arrow.right.square")
+                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                        .foregroundStyle(.red)
                     Spacer()
                 }
-                .foregroundStyle(.red)
                 .padding(.vertical, 14)
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
-        .cardStyle()
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func signOut() {
@@ -296,37 +351,363 @@ struct ProfileView: View {
     }
 }
 
-struct ProfileStatCard: View {
+// MARK: - Enhanced Supporting Views
+
+private struct EnhancedAvatarView: View {
+    let initial: String
+    let level: Int
+    let xpProgress: Double
+
+    @State private var isAnimating = false
+    @State private var ringRotation: Double = 0
+
+    var body: some View {
+        ZStack {
+            // Outer glow
+            Circle()
+                .fill(Color(hex: "16A34A").opacity(0.2))
+                .frame(width: 100, height: 100)
+                .blur(radius: 15)
+                .scaleEffect(isAnimating ? 1.1 : 1.0)
+                .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: isAnimating)
+
+            // Animated progress ring
+            Circle()
+                .stroke(Color(.systemGray5), lineWidth: 4)
+                .frame(width: 92, height: 92)
+
+            Circle()
+                .trim(from: 0, to: CGFloat(min(xpProgress, 1.0)))
+                .stroke(
+                    AngularGradient(
+                        colors: [Color(hex: "16A34A"), Color(hex: "22C55E"), Color(hex: "16A34A")],
+                        center: .center
+                    ),
+                    style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                )
+                .frame(width: 92, height: 92)
+                .rotationEffect(.degrees(-90))
+                .rotationEffect(.degrees(ringRotation))
+
+            // Inner avatar
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [Color(hex: "16A34A"), Color(hex: "15803D")],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 80, height: 80)
+                .shadow(color: Color(hex: "16A34A").opacity(0.3), radius: 8, x: 0, y: 4)
+
+            Text(initial)
+                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+
+            // Level badge
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Text("Lv.\(level)")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(Color(hex: "16A34A"))
+                                .shadow(color: Color(hex: "16A34A").opacity(0.4), radius: 4, x: 0, y: 2)
+                        )
+                }
+            }
+            .frame(width: 92, height: 92)
+        }
+        .onAppear {
+            isAnimating = true
+            withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+                ringRotation = 360
+            }
+        }
+    }
+}
+
+private struct EnhancedProfileXPBar: View {
+    let progress: Double
+
+    @State private var animatedProgress: Double = 0
+    @State private var shimmerOffset: CGFloat = -1
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                // Background track
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(Color(.systemGray5))
+
+                // Filled progress
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(hex: "16A34A"), Color(hex: "22C55E")],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: geometry.size.width * CGFloat(animatedProgress))
+                    .overlay(
+                        // Shimmer effect
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.0),
+                                Color.white.opacity(0.4),
+                                Color.white.opacity(0.0)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: 40)
+                        .offset(x: shimmerOffset * geometry.size.width * CGFloat(animatedProgress))
+                        .mask(
+                            RoundedRectangle(cornerRadius: 5)
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+
+                // Glowing edge
+                if animatedProgress > 0 {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 10, height: 10)
+                        .blur(radius: 2)
+                        .offset(x: geometry.size.width * CGFloat(animatedProgress) - 5)
+                }
+            }
+        }
+        .frame(height: 10)
+        .onAppear {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.3)) {
+                animatedProgress = progress
+            }
+            withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+                shimmerOffset = 2
+            }
+        }
+    }
+}
+
+private struct EnhancedProfileStatCard: View {
     let title: String
     let value: Double
     let unit: String
     let icon: String
-    let tint: Color
+    let color: Color
+    let index: Int
+
+    @State private var isVisible = false
+    @State private var isPressed = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: icon)
-                .font(.title3)
-                .padding(10)
-                .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        VStack(alignment: .leading, spacing: 8) {
+            ZStack {
+                // Glow behind icon
+                Circle()
+                    .fill(color.opacity(0.2))
+                    .frame(width: 40, height: 40)
+                    .blur(radius: 8)
 
-            Text(value.abbreviated)
-                .font(.title2.bold())
+                Image(systemName: icon)
+                    .font(.body)
+                    .foregroundStyle(color)
+                    .padding(10)
+                    .background(color.opacity(0.15), in: Circle())
+                    .symbolEffect(.bounce, value: isVisible)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
+                Text(value.abbreviated)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .contentTransition(.numericText())
                 Text(title)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text(unit)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
         }
-        .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemBackground))
-        .cornerRadius(AppConstants.Layout.cardCornerRadius)
-        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
+        .padding(14)
+        .glowCard(color: color, cornerRadius: 14, isActive: isPressed)
+        .scaleEffect(isPressed ? 0.97 : (isVisible ? 1.0 : 0.9))
+        .opacity(isVisible ? 1 : 0)
+        .offset(y: isVisible ? 0 : 20)
+        .onTapGesture {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                isPressed = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    isPressed = false
+                }
+            }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(Double(index) * 0.1)) {
+                isVisible = true
+            }
+        }
+    }
+}
+
+private struct EnhancedCategoryRow: View {
+    let category: ActivityCategory
+    let count: Int
+    let total: Int
+    let index: Int
+
+    @State private var animatedProgress: Double = 0
+    @State private var isVisible = false
+
+    private var percentage: Double {
+        guard total > 0 else { return 0 }
+        return Double(count) / Double(total)
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(category.color.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                    .blur(radius: 4)
+
+                Image(systemName: category.icon)
+                    .font(.body)
+                    .foregroundStyle(category.color)
+                    .frame(width: 32, height: 32)
+                    .background(category.color.opacity(0.12), in: Circle())
+                    .symbolEffect(.bounce, value: isVisible)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(category.rawValue)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Text("\(count)")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .contentTransition(.numericText())
+                }
+
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color(.systemGray5))
+
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(
+                                LinearGradient(
+                                    colors: [category.color, category.color.opacity(0.7)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: geometry.size.width * animatedProgress)
+                            .shadow(color: category.color.opacity(0.3), radius: 2, x: 0, y: 1)
+                    }
+                }
+                .frame(height: 6)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .opacity(isVisible ? 1 : 0)
+        .offset(x: isVisible ? 0 : -20)
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(Double(index) * 0.08)) {
+                isVisible = true
+            }
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(Double(index) * 0.08 + 0.2)) {
+                animatedProgress = percentage
+            }
+        }
+    }
+}
+
+private struct EnhancedAchievementBadge: View {
+    let achievement: Achievement
+    let index: Int
+
+    @State private var isVisible = false
+    @State private var showSparkle = false
+
+    var body: some View {
+        VStack(spacing: 10) {
+            ZStack {
+                // Glow effect for unlocked
+                if achievement.isUnlocked {
+                    Circle()
+                        .fill(Color.ecoGreen.opacity(0.25))
+                        .frame(width: 90, height: 90)
+                        .blur(radius: 15)
+                        .scaleEffect(showSparkle ? 1.2 : 1.0)
+                }
+
+                // Outer ring with gradient
+                Circle()
+                    .stroke(
+                        achievement.isUnlocked
+                            ? LinearGradient(colors: [Color.ecoGreen, Color.ecoGreen.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                            : LinearGradient(colors: [Color.gray.opacity(0.4), Color.gray.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                        lineWidth: 3
+                    )
+                    .frame(width: 80, height: 80)
+                    .scaleEffect(isVisible ? 1.0 : 0.8)
+
+                // Inner fill
+                Circle()
+                    .fill(achievement.isUnlocked ? Color.ecoGreen.opacity(0.15) : Color.gray.opacity(0.1))
+                    .frame(width: 68, height: 68)
+
+                // Icon
+                Image(systemName: achievement.iconName)
+                    .font(.system(size: 26))
+                    .foregroundStyle(achievement.isUnlocked ? Color.ecoGreen : Color.gray)
+                    .symbolEffect(.bounce, value: showSparkle)
+
+                // Sparkle particles
+                if achievement.isUnlocked && showSparkle {
+                    SparkleParticleView(colors: [Color.ecoGreen, Color.ecoGreen.opacity(0.7), .white])
+                        .frame(width: 100, height: 100)
+                }
+            }
+            .shadow(color: achievement.isUnlocked ? Color.ecoGreen.opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
+
+            Text(achievement.title)
+                .font(.caption)
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(width: 100)
+        .opacity(achievement.isUnlocked ? 1 : 0.5)
+        .scaleEffect(isVisible ? 1 : 0.8)
+        .opacity(isVisible ? 1 : 0)
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(Double(index) * 0.1)) {
+                isVisible = true
+            }
+            if achievement.isUnlocked {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.1 + 0.3) {
+                    showSparkle = true
+                }
+            }
+        }
     }
 }
 
@@ -342,13 +723,13 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            List {
                 Section("Preferences") {
-                    Toggle("Sound Effects", isOn: Binding(
-                        get: { userProfile?.soundEnabled ?? true },
+                    Toggle("Notifications", isOn: Binding(
+                        get: { userProfile?.notificationsEnabled ?? true },
                         set: { newValue in
                             if let profile = userProfile {
-                                profile.soundEnabled = newValue
+                                profile.notificationsEnabled = newValue
                             }
                         }
                     ))
@@ -358,15 +739,6 @@ struct SettingsView: View {
                         set: { newValue in
                             if let profile = userProfile {
                                 profile.hapticsEnabled = newValue
-                            }
-                        }
-                    ))
-
-                    Toggle("Notifications", isOn: Binding(
-                        get: { userProfile?.notificationsEnabled ?? true },
-                        set: { newValue in
-                            if let profile = userProfile {
-                                profile.notificationsEnabled = newValue
                             }
                         }
                     ))
@@ -387,7 +759,7 @@ struct SettingsView: View {
                     HStack {
                         Text("Version")
                         Spacer()
-                        Text("1.0")
+                        Text("1.0.0")
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -410,7 +782,7 @@ struct AchievementsListView: View {
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))], spacing: 16) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 16) {
                 ForEach(achievements) { achievement in
                     AchievementBadgeView(achievement: achievement)
                 }
@@ -425,5 +797,5 @@ struct AchievementsListView: View {
 #Preview {
     ProfileView()
         .environment(AuthenticationManager())
-        .modelContainer(for: [UserProfile.self, EcoActivity.self], inMemory: true)
+        .modelContainer(for: [UserProfile.self, EcoActivity.self, Achievement.self], inMemory: true)
 }

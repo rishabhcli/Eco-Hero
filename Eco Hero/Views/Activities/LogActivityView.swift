@@ -65,13 +65,12 @@ struct LogActivityView: View {
                 .padding(.vertical, 30)
             }
             .background(
-                LinearGradient(
-                    colors: colorScheme == .dark
-                        ? [Color.green.opacity(0.3), Color.black]
-                        : [Color.green.opacity(0.15), Color.white],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                ZStack {
+                    Color(.systemGroupedBackground)
+
+                    // Rain effect
+                    RainEffectView(intensity: 30)
+                }
                 .ignoresSafeArea()
             )
             .scrollDismissesKeyboard(.interactively)
@@ -135,7 +134,7 @@ struct LogActivityView: View {
                 }
             }
         }
-        .cardStyle(background: categoryColor.opacity(0.15), borderOpacity: 0.15)
+        .tintedCardStyle(tint: categoryColor)
     }
 
     private var categorySelector: some View {
@@ -206,21 +205,42 @@ struct LogActivityView: View {
             // Apple Intelligence suggestion display - only on iOS 26+
             if #available(iOS 26, *) {
                 if let aiSuggestion {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(aiSuggestion.actionTitle)
-                            .font(.headline)
-                        Text(aiSuggestion.activityDescription)
-                            .font(.subheadline)
-                        Text(aiSuggestion.motivation)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                    Button {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                            selectedActivityType = aiSuggestion.actionTitle
+                            notes = aiSuggestion.motivation
+                        }
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "sparkles")
+                                .font(.title2)
+                                .foregroundStyle(.purple)
+                                .symbolEffect(.pulse, options: .repeating.speed(0.5), value: true)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(aiSuggestion.actionTitle)
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                                Text(aiSuggestion.activityDescription)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                Text(aiSuggestion.motivation)
+                                    .font(.footnote)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .multilineTextAlignment(.leading)
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right.circle.fill")
+                                .font(.title3)
+                                .foregroundStyle(.purple.opacity(0.6))
+                        }
+                        .padding(14)
                     }
-                    .padding()
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
-                    .onTapGesture {
-                        selectedActivityType = aiSuggestion.actionTitle
-                        notes = aiSuggestion.motivation
-                    }
+                    .buttonStyle(.glass(.regular.tint(.purple.opacity(0.2)).interactive()))
+                    .glassEffectID("ai-suggestion", in: glassNamespace)
                 } else if let suggestionError {
                     Text(suggestionError)
                         .font(.footnote)
@@ -257,13 +277,14 @@ struct LogActivityView: View {
                 .font(.headline)
 
             ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: AppConstants.Layout.cardCornerRadius, style: .continuous)
-                    .fill(Color(.secondarySystemBackground))
                 TextEditor(text: $notes)
                     .padding(12)
                     .frame(minHeight: 120)
-                    .background(Color.clear)
+                    .scrollContentBackground(.hidden)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: AppConstants.Layout.cardCornerRadius, style: .continuous))
                     .focused($focusedField, equals: .notes)
+                
                 if notes.isEmpty {
                     Text("Add context, like who you were with or what inspired you.")
                         .foregroundStyle(.secondary)
@@ -540,25 +561,51 @@ private struct ActivityOptionCard: View {
     let title: String
     let isSelected: Bool
     let color: Color
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var isPressed = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.subheadline.weight(.medium))
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 8) {
+                Text(title)
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 4)
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(color)
+                        .symbolEffect(.bounce, value: isSelected)
+                }
+            }
             Text(isSelected ? "Selected" : "Tap to choose")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(isSelected ? color.opacity(0.8) : .secondary)
+                .lineLimit(1)
         }
-        .padding()
-        .frame(maxWidth: .infinity, minHeight: 90, alignment: .leading)
+        .padding(12)
+        .frame(maxWidth: .infinity, minHeight: 80, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: AppConstants.Layout.compactCornerRadius, style: .continuous)
-                .fill(isSelected ? color.opacity(0.25) : Color(.secondarySystemBackground))
+                .fill(isSelected ? color.opacity(colorScheme == .dark ? 0.2 : 0.12) : Color(.secondarySystemBackground))
                 .overlay(
                     RoundedRectangle(cornerRadius: AppConstants.Layout.compactCornerRadius, style: .continuous)
                         .stroke(isSelected ? color : Color.clear, lineWidth: 2)
                 )
         )
+        .scaleEffect(isPressed ? 0.96 : (isSelected ? 1.01 : 1.0))
+        .shadow(
+            color: isSelected ? color.opacity(0.25) : .clear,
+            radius: isSelected ? 6 : 0,
+            x: 0,
+            y: isSelected ? 3 : 0
+        )
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
+        .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+            isPressed = pressing
+        }, perform: {})
     }
 }
 
@@ -567,19 +614,36 @@ private struct ImpactMetricRow: View {
     let value: String
     let icon: String
     let tint: Color
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var isVisible = false
 
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             Image(systemName: icon)
-                .padding(8)
-                .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            VStack(alignment: .leading) {
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(tint)
+                .padding(10)
+                .background(tint.opacity(colorScheme == .dark ? 0.2 : 0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .symbolEffect(.pulse, options: .repeating.speed(0.3), value: isVisible)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.subheadline)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
                 Text(value)
-                    .font(.headline)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .contentTransition(.numericText())
             }
-            Spacer()
+            Spacer(minLength: 0)
+        }
+        .opacity(isVisible ? 1 : 0)
+        .offset(x: isVisible ? 0 : -10)
+        .onAppear {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                isVisible = true
+            }
         }
     }
 }

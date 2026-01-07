@@ -115,22 +115,25 @@ struct WasteSortingView: View {
     }
 
     private func statBadge(title: String, value: String, icon: String, color: Color) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(color)
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(1)
                 Text(value)
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
     }
 
     private var predictionOverlay: some View {
@@ -150,18 +153,19 @@ struct WasteSortingView: View {
             }
 
             // Main prediction
-            VStack(spacing: 10) {
+            VStack(spacing: 12) {
                 Image(systemName: classifier.predictedBin.icon)
-                    .font(.system(size: 56, weight: .medium))
+                    .font(.system(size: 52, weight: .medium))
                     .foregroundStyle(classifier.predictedBin.color)
                     .shadow(color: classifier.predictedBin.color.opacity(0.6), radius: 12)
                     .contentTransition(.symbolEffect(.replace))
 
                 Text(classifier.predictedBin.rawValue.uppercased())
-                    .font(.system(size: 36, weight: .black, design: .rounded))
+                    .font(.system(size: 32, weight: .black, design: .rounded))
                     .foregroundStyle(.white)
                     .tracking(2)
-                    .contentTransition(.numericText())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
 
                 // Confidence meter
                 confidenceMeter
@@ -236,7 +240,7 @@ struct WasteSortingView: View {
     }
 
     private var binButtons: some View {
-        HStack(spacing: 24) {
+        HStack(spacing: 12) {
             ForEach(WasteBin.allCases, id: \.self) { bin in
                 if #available(iOS 26, *) {
                     Button {
@@ -244,19 +248,20 @@ struct WasteSortingView: View {
                             evaluateSelection(bin)
                         }
                     } label: {
-                        VStack(spacing: 8) {
+                        VStack(spacing: 4) {
                             Image(systemName: bin.icon)
-                                .font(.system(size: 24, weight: .semibold))
+                                .font(.system(size: 18, weight: .semibold))
                                 .foregroundStyle(.white)
+                                .symbolEffect(.bounce, value: classifier.predictedBin == bin)
 
                             Text(bin.rawValue)
-                                .font(.subheadline.bold())
+                                .font(.caption.weight(.semibold))
                                 .foregroundStyle(.white)
                         }
-                        .frame(width: 120)
-                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
                     }
-                    .buttonStyle(.glass(.regular.tint(binColor(for: bin).opacity(0.6)).interactive()))
+                    .buttonStyle(.glass(.regular.tint(bin.color.opacity(0.6)).interactive()))
                     .glassEffectID("bin-\(bin.rawValue)", in: glassNamespace)
                 } else {
                     Button {
@@ -264,34 +269,34 @@ struct WasteSortingView: View {
                             evaluateSelection(bin)
                         }
                     } label: {
-                        VStack(spacing: 8) {
+                        VStack(spacing: 4) {
                             Image(systemName: bin.icon)
-                                .font(.system(size: 24, weight: .semibold))
+                                .font(.system(size: 18, weight: .semibold))
                                 .foregroundStyle(.white)
 
                             Text(bin.rawValue)
-                                .font(.subheadline.bold())
+                                .font(.caption.weight(.semibold))
                                 .foregroundStyle(.white)
                         }
-                        .frame(width: 120)
-                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(bin.color.opacity(0.5))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                        .shadow(color: bin.color.opacity(0.4), radius: 8, x: 0, y: 3)
                     }
-                    .buttonStyle(.compatibleGlass(
-                        tintColor: binColor(for: bin).opacity(0.6),
-                        cornerRadius: 16,
-                        interactive: true
-                    ))
+                    .buttonStyle(.plain)
                 }
             }
-        }
-    }
-
-    private func binColor(for bin: WasteBin) -> Color {
-        switch bin {
-        case .recycle:
-            return .blue
-        case .compost:
-            return .green
         }
     }
 
@@ -387,6 +392,41 @@ struct WasteSortingView: View {
                 break
             }
         }
+    }
+}
+
+
+// MARK: - Recent History Compact View
+
+private struct RecentHistoryCompact: View {
+    let results: [WasteSortingResult]
+    let namespace: Namespace.ID
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.6))
+
+            ForEach(results.prefix(10)) { result in
+                Circle()
+                    .fill(result.isCorrect ? Color.green : Color.red)
+                    .frame(width: 8, height: 8)
+                    .shadow(color: result.isCorrect ? .green.opacity(0.6) : .red.opacity(0.6), radius: 4)
+            }
+
+            if results.isEmpty {
+                Text("No attempts yet")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .compatibleGlassEffect(shape: Capsule(), interactive: false)
+        .compatibleGlassEffectID("history", in: namespace)
     }
 }
 

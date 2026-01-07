@@ -49,23 +49,138 @@ struct AppConstants {
     }
 
     struct Gradients {
+        // Primary hero gradient for main headers
         static let hero = LinearGradient(
             colors: [Colors.evergreen, Colors.forest],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
 
+        // Accent gradient for interactive elements
         static let accent = LinearGradient(
             colors: [Colors.ocean, Colors.dusk],
             startPoint: .top,
             endPoint: .bottomTrailing
         )
 
+        // Subtle mellow gradient for card backgrounds
         static let mellow = LinearGradient(
             colors: [Color.primary.opacity(0.08), Color.primary.opacity(0.02)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+
+        // Success gradient for positive feedback
+        static let success = LinearGradient(
+            colors: [Color.green, Color.green.opacity(0.7)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        // Warning gradient for streaks and alerts
+        static let warning = LinearGradient(
+            colors: [Color.orange, Color.yellow],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        // Glass tint gradient for liquid glass effects
+        static let glassTint = LinearGradient(
+            colors: [Color.white.opacity(0.3), Color.white.opacity(0.1)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        // Category-specific gradients
+        static func categoryGradient(for category: ActivityCategory) -> LinearGradient {
+            let baseColor = category.color
+            return LinearGradient(
+                colors: [baseColor, baseColor.opacity(0.6)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+
+        // Glass tint for specific category
+        static func glassTint(for category: ActivityCategory) -> Color {
+            category.color.opacity(0.3)
+        }
+
+        // Shimmer gradient for progress bars
+        static let shimmer = LinearGradient(
+            colors: [
+                Color.white.opacity(0.1),
+                Color.white.opacity(0.5),
+                Color.white.opacity(0.1)
+            ],
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+
+        // Celebration gradient for level up
+        static let celebration = LinearGradient(
+            colors: [Color(hex: "FFD700"), Color(hex: "FFA500"), Color(hex: "FF6B6B")],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        // Achievement gradient
+        static let achievement = LinearGradient(
+            colors: [Color(hex: "A855F7"), Color(hex: "EC4899")],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        // Impact card gradients
+        static let carbonGradient = [Color(hex: "16A34A"), Color(hex: "22C55E")]
+        static let waterGradient = [Color(hex: "0EA5E9"), Color(hex: "38BDF8")]
+        static let landGradient = [Color(hex: "84CC16"), Color(hex: "A3E635")]
+        static let plasticGradient = [Color(hex: "F97316"), Color(hex: "FB923C")]
+
+        // Streak flame gradient
+        static let flameGradient = [Color(hex: "F97316"), Color(hex: "FBBF24"), Color(hex: "FCD34D")]
+    }
+
+    // MARK: - Animation Timing
+
+    struct Animation {
+        static let springResponse: Double = 0.4
+        static let springDamping: Double = 0.8
+        static let quickDuration: Double = 0.2
+        static let standardDuration: Double = 0.35
+        static let longDuration: Double = 0.5
+
+        // Particle and effect timing
+        static let particleLifetime: Double = 2.0
+        static let particleEmissionRate: Double = 0.15
+        static let shimmerDuration: Double = 1.5
+        static let celebrationDuration: Double = 3.0
+        static let confettiBurstDuration: Double = 1.5
+
+        // Micro-interaction timing
+        static let cascadeDelay: Double = 0.05
+        static let microInteractionDuration: Double = 0.15
+        static let parallaxMultiplier: CGFloat = 0.3
+
+        static var spring: SwiftUI.Animation {
+            .spring(response: springResponse, dampingFraction: springDamping)
+        }
+
+        static var bouncy: SwiftUI.Animation {
+            .spring(response: 0.35, dampingFraction: 0.6)
+        }
+
+        static var gentle: SwiftUI.Animation {
+            .easeInOut(duration: standardDuration)
+        }
+
+        static var snappy: SwiftUI.Animation {
+            .spring(response: 0.25, dampingFraction: 0.7)
+        }
+
+        static var elastic: SwiftUI.Animation {
+            .spring(response: 0.5, dampingFraction: 0.5)
+        }
     }
 
     // MARK: - Level System

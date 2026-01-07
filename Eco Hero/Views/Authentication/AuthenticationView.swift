@@ -148,7 +148,7 @@ struct AuthenticationView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    .cardStyle(background: Color.white.opacity(0.08), shadowOpacity: 0, borderOpacity: 0.15)
+                    .secondaryCardStyle()
                 }
             }
         }

@@ -10,6 +10,40 @@
 
 import SwiftUI
 
+// MARK: - Glass Variant Enum
+
+/// Available glass effect variants for visual hierarchy
+enum GlassVariant {
+    case ultraThin
+    case thin
+    case regular
+    case thick
+    case ultraThick
+    case clear
+
+    var fallbackMaterial: Material {
+        switch self {
+        case .ultraThin: return .ultraThinMaterial
+        case .thin: return .thinMaterial
+        case .regular: return .regularMaterial
+        case .thick: return .thickMaterial
+        case .ultraThick: return .ultraThickMaterial
+        case .clear: return .ultraThinMaterial
+        }
+    }
+
+    var fallbackOpacity: Double {
+        switch self {
+        case .ultraThin: return 0.3
+        case .thin: return 0.4
+        case .regular: return 0.5
+        case .thick: return 0.6
+        case .ultraThick: return 0.7
+        case .clear: return 0.15
+        }
+    }
+}
+
 // MARK: - Glass Effect Container (Compatibility Wrapper)
 
 /// Wrapper container that provides Liquid Glass effects on iOS 26+
@@ -24,9 +58,14 @@ struct GlassEffectContainer<Content: View>: View {
     }
 
     var body: some View {
-        // Both versions use VStack; glass effects are applied per-view
-        VStack(spacing: spacing) {
-            content()
+        if #available(iOS 26, *) {
+            SwiftUI.GlassEffectContainer(spacing: spacing) {
+                content()
+            }
+        } else {
+            VStack(spacing: spacing) {
+                content()
+            }
         }
     }
 }
@@ -39,16 +78,19 @@ extension View {
     /// - iOS 18-25: Uses Material blur with similar appearance
     @ViewBuilder
     func compatibleGlassEffect(
+        variant: GlassVariant = .regular,
         tintColor: Color? = nil,
         cornerRadius: CGFloat = 16,
         interactive: Bool = true
     ) -> some View {
         if #available(iOS 26, *) {
-            // iOS 26+: Use Liquid Glass
+            // iOS 26+: Use Liquid Glass with .regular (variants not directly accessible)
             if let tint = tintColor, interactive {
                 self.glassEffect(.regular.tint(tint).interactive(), in: .rect(cornerRadius: cornerRadius))
             } else if let tint = tintColor {
                 self.glassEffect(.regular.tint(tint), in: .rect(cornerRadius: cornerRadius))
+            } else if interactive {
+                self.glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
             } else {
                 self.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
             }
@@ -57,24 +99,35 @@ extension View {
             self
                 .background(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .fill(.ultraThinMaterial)
+                        .fill(variant.fallbackMaterial)
                         .overlay(
                             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                .stroke(Color.white.opacity(0.2 * variant.fallbackOpacity), lineWidth: 1)
                         )
                         .background(
                             tintColor.map {
                                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                                    .fill($0)
+                                    .fill($0.opacity(variant.fallbackOpacity))
                             }
                         )
                 )
         }
     }
 
+    /// Convenience overload without variant parameter for backward compatibility
+    @ViewBuilder
+    func compatibleGlassEffect(
+        tintColor: Color? = nil,
+        cornerRadius: CGFloat = 16,
+        interactive: Bool = true
+    ) -> some View {
+        compatibleGlassEffect(variant: .regular, tintColor: tintColor, cornerRadius: cornerRadius, interactive: interactive)
+    }
+
     /// Applies a glass effect with a specific shape.
     @ViewBuilder
     func compatibleGlassEffect<S: InsettableShape>(
+        variant: GlassVariant = .regular,
         tintColor: Color? = nil,
         shape: S,
         interactive: Bool = true
@@ -85,6 +138,8 @@ extension View {
                 self.glassEffect(.regular.tint(tint).interactive(), in: shape)
             } else if let tint = tintColor {
                 self.glassEffect(.regular.tint(tint), in: shape)
+            } else if interactive {
+                self.glassEffect(.regular.interactive(), in: shape)
             } else {
                 self.glassEffect(.regular, in: shape)
             }
@@ -93,18 +148,28 @@ extension View {
             self
                 .background(
                     shape
-                        .fill(.ultraThinMaterial)
+                        .fill(variant.fallbackMaterial)
                         .overlay(
                             shape
-                                .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+                                .strokeBorder(Color.white.opacity(0.2 * variant.fallbackOpacity), lineWidth: 1)
                         )
                         .background(
                             tintColor.map {
-                                shape.fill($0)
+                                shape.fill($0.opacity(variant.fallbackOpacity))
                             }
                         )
                 )
         }
+    }
+
+    /// Convenience overload without variant for backward compatibility
+    @ViewBuilder
+    func compatibleGlassEffect<S: InsettableShape>(
+        tintColor: Color? = nil,
+        shape: S,
+        interactive: Bool = true
+    ) -> some View {
+        compatibleGlassEffect(variant: .regular, tintColor: tintColor, shape: shape, interactive: interactive)
     }
 
     /// Assigns an ID to a glass effect element (iOS 26+ only, no-op on earlier versions).
@@ -142,63 +207,110 @@ extension View {
 // MARK: - Compatible Glass Button Style
 
 struct CompatibleGlassButtonStyle: ButtonStyle {
+    let variant: GlassVariant
     let tintColor: Color?
     let cornerRadius: CGFloat
-    let interactive: Bool
+    let isProminent: Bool
 
-    init(tintColor: Color? = nil, cornerRadius: CGFloat = 16, interactive: Bool = true) {
+    init(
+        variant: GlassVariant = .regular,
+        tintColor: Color? = nil,
+        cornerRadius: CGFloat = 16,
+        isProminent: Bool = false
+    ) {
+        self.variant = variant
         self.tintColor = tintColor
         self.cornerRadius = cornerRadius
-        self.interactive = interactive
+        self.isProminent = isProminent
     }
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .background(
-                Group {
-                    if #available(iOS 26, *) {
-                        // iOS 26+: Use ultraThinMaterial with tint (glass effect applied separately)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(variant.fallbackMaterial)
+                    .overlay(
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                                    .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                            .stroke(
+                                Color.white.opacity(configuration.isPressed ? 0.4 : 0.25),
+                                lineWidth: isProminent ? 1.5 : 1
                             )
-                            .background(
-                                tintColor.map {
-                                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                                        .fill($0)
-                                }
-                            )
-                    } else {
-                        // iOS 18-25: Material blur button
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                                    .stroke(Color.white.opacity(0.25), lineWidth: 1)
-                            )
-                            .background(
-                                tintColor.map {
-                                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                                        .fill($0)
-                                }
-                            )
-                    }
-                }
+                    )
+                    .background(
+                        tintColor.map {
+                            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                                .fill($0.opacity(isProminent ? 0.8 : 0.5))
+                        }
+                    )
             )
             .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+            .brightness(configuration.isPressed ? -0.05 : 0)
+            .shadow(
+                color: (tintColor ?? .clear).opacity(configuration.isPressed ? 0.2 : 0.3),
+                radius: configuration.isPressed ? 4 : 8,
+                x: 0,
+                y: configuration.isPressed ? 2 : 4
+            )
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
+/// Prominent glass button style for primary actions
+struct CompatibleGlassProminentButtonStyle: ButtonStyle {
+    let tintColor: Color
+    let cornerRadius: CGFloat
+
+    init(tintColor: Color = .blue, cornerRadius: CGFloat = 16) {
+        self.tintColor = tintColor
+        self.cornerRadius = cornerRadius
+    }
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                tintColor.opacity(configuration.isPressed ? 0.7 : 0.9),
+                                tintColor.opacity(configuration.isPressed ? 0.5 : 0.7)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                    )
+            )
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .brightness(configuration.isPressed ? -0.08 : 0)
+            .shadow(
+                color: tintColor.opacity(configuration.isPressed ? 0.3 : 0.5),
+                radius: configuration.isPressed ? 6 : 12,
+                x: 0,
+                y: configuration.isPressed ? 3 : 6
+            )
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
 
 extension ButtonStyle where Self == CompatibleGlassButtonStyle {
     static func compatibleGlass(
+        variant: GlassVariant = .regular,
         tintColor: Color? = nil,
         cornerRadius: CGFloat = 16,
         interactive: Bool = true
     ) -> CompatibleGlassButtonStyle {
-        CompatibleGlassButtonStyle(tintColor: tintColor, cornerRadius: cornerRadius, interactive: interactive)
+        CompatibleGlassButtonStyle(variant: variant, tintColor: tintColor, cornerRadius: cornerRadius, isProminent: false)
+    }
+
+    static func compatibleGlassProminent(
+        tintColor: Color = .blue,
+        cornerRadius: CGFloat = 16
+    ) -> CompatibleGlassProminentButtonStyle {
+        CompatibleGlassProminentButtonStyle(tintColor: tintColor, cornerRadius: cornerRadius)
     }
 }
 
@@ -214,6 +326,121 @@ extension View {
             return true
         }
         return false
+    }
+}
+
+// MARK: - Animation Helpers
+
+extension View {
+    /// Applies a smooth spring animation for interactive elements
+    func springAnimation<V: Equatable>(value: V) -> some View {
+        self.animation(.spring(response: 0.4, dampingFraction: 0.8), value: value)
+    }
+
+    /// Applies a bouncy spring animation for playful interactions
+    func bouncyAnimation<V: Equatable>(value: V) -> some View {
+        self.animation(.spring(response: 0.35, dampingFraction: 0.6), value: value)
+    }
+
+    /// Applies a gentle ease animation for subtle transitions
+    func gentleAnimation<V: Equatable>(value: V) -> some View {
+        self.animation(.easeInOut(duration: 0.25), value: value)
+    }
+
+    /// Adds a pulsing glow effect (useful for highlighting)
+    func pulsingGlow(color: Color, isActive: Bool) -> some View {
+        self
+            .shadow(
+                color: color.opacity(isActive ? 0.6 : 0),
+                radius: isActive ? 12 : 0,
+                x: 0,
+                y: 0
+            )
+            .animation(
+                isActive
+                    ? .easeInOut(duration: 1.0).repeatForever(autoreverses: true)
+                    : .default,
+                value: isActive
+            )
+    }
+
+    /// Adds a subtle breathing scale effect
+    func breathingEffect(isActive: Bool, scale: CGFloat = 1.03) -> some View {
+        self
+            .scaleEffect(isActive ? scale : 1.0)
+            .animation(
+                isActive
+                    ? .easeInOut(duration: 2.0).repeatForever(autoreverses: true)
+                    : .default,
+                value: isActive
+            )
+    }
+
+    /// Count-up animation modifier for numeric values
+    func countUpAnimation() -> some View {
+        self.contentTransition(.numericText(countsDown: false))
+    }
+
+    /// Applies press feedback (scale + brightness)
+    func pressEffect(isPressed: Bool) -> some View {
+        self
+            .scaleEffect(isPressed ? 0.96 : 1.0)
+            .brightness(isPressed ? -0.05 : 0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
+    }
+}
+
+// MARK: - Animated Value View Modifier
+
+/// A view modifier that animates numeric value changes
+struct AnimatedValueModifier: ViewModifier {
+    let value: Double
+    @State private var displayedValue: Double = 0
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.8)) {
+                    displayedValue = value
+                }
+            }
+            .onChange(of: value) { _, newValue in
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    displayedValue = newValue
+                }
+            }
+    }
+}
+
+extension View {
+    func animateValue(_ value: Double) -> some View {
+        self.modifier(AnimatedValueModifier(value: value))
+    }
+}
+
+// MARK: - Staggered Animation Helper
+
+/// Applies staggered entrance animation to child views
+struct StaggeredAnimationModifier: ViewModifier {
+    let index: Int
+    let baseDelay: Double
+    @State private var isVisible = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(isVisible ? 1 : 0)
+            .offset(y: isVisible ? 0 : 20)
+            .onAppear {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(Double(index) * baseDelay)) {
+                    isVisible = true
+                }
+            }
+    }
+}
+
+extension View {
+    func staggeredAnimation(index: Int, baseDelay: Double = 0.05) -> some View {
+        self.modifier(StaggeredAnimationModifier(index: index, baseDelay: baseDelay))
     }
 }
 
