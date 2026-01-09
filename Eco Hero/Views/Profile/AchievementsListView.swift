@@ -9,6 +9,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 /// Wrapper that navigates to the full AchievementGalleryView
 struct AchievementsListView: View {

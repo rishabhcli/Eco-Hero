@@ -149,18 +149,20 @@ struct LearnView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [Color(hex: "DCFCE7"), Color(hex: "D1FAE5")],
+                            colors: colorScheme == .dark
+                                ? [Color(hex: "16A34A").opacity(0.25), Color(hex: "16A34A").opacity(0.15)]
+                                : [Color(hex: "DCFCE7"), Color(hex: "D1FAE5")],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
 
-                // Subtle inner glow
+                // Subtle inner glow - adjust opacity for dark mode
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color(hex: "16A34A").opacity(0.2), lineWidth: 1)
+                    .stroke(Color(hex: "16A34A").opacity(colorScheme == .dark ? 0.4 : 0.2), lineWidth: 1)
             }
         )
-        .shadow(color: Color(hex: "16A34A").opacity(0.15), radius: 8, x: 0, y: 4)
+        .shadow(color: Color(hex: "16A34A").opacity(colorScheme == .dark ? 0.3 : 0.15), radius: 8, x: 0, y: 4)
     }
 
     private var tipsSection: some View {
@@ -388,6 +390,7 @@ struct EnhancedCategoryTipCard: View {
 struct FactCard: View {
     let fact: String
     let number: Int
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -395,7 +398,12 @@ struct FactCard: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color(hex: "16A34A"))
                 .frame(width: 24, height: 24)
-                .background(Color(hex: "DCFCE7"), in: Circle())
+                .background(
+                    colorScheme == .dark
+                        ? Color(hex: "16A34A").opacity(0.3)
+                        : Color(hex: "DCFCE7"),
+                    in: Circle()
+                )
 
             Text(fact)
                 .font(.subheadline)
@@ -413,6 +421,7 @@ struct EnhancedFactCard: View {
     let fact: String
     let number: Int
     let index: Int
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var isVisible = false
     @State private var isExpanded = false
@@ -422,7 +431,7 @@ struct EnhancedFactCard: View {
             ZStack {
                 // Glow behind number
                 Circle()
-                    .fill(Color(hex: "16A34A").opacity(0.2))
+                    .fill(Color(hex: "16A34A").opacity(colorScheme == .dark ? 0.3 : 0.2))
                     .frame(width: 32, height: 32)
                     .blur(radius: 6)
 
@@ -434,7 +443,9 @@ struct EnhancedFactCard: View {
                         Circle()
                             .fill(
                                 LinearGradient(
-                                    colors: [Color(hex: "DCFCE7"), Color(hex: "BBF7D0")],
+                                    colors: colorScheme == .dark
+                                        ? [Color(hex: "16A34A").opacity(0.35), Color(hex: "16A34A").opacity(0.25)]
+                                        : [Color(hex: "DCFCE7"), Color(hex: "BBF7D0")],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -529,6 +540,7 @@ private struct ReadMoreButtonStyleModifier: ViewModifier {
 
 struct CategoryTipsDetailView: View {
     let category: ActivityCategory
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ScrollView {
@@ -573,7 +585,12 @@ struct CategoryTipsDetailView: View {
                                 .font(.caption)
                                 .foregroundStyle(Color(hex: "F59E0B"))
                                 .padding(6)
-                                .background(Color(hex: "FEF3C7"), in: Circle())
+                                .background(
+                                    colorScheme == .dark
+                                        ? Color(hex: "F59E0B").opacity(0.2)
+                                        : Color(hex: "FEF3C7"),
+                                    in: Circle()
+                                )
                             Text(fact)
                                 .font(.subheadline)
                                 .foregroundStyle(.primary)

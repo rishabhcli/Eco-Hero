@@ -54,11 +54,11 @@ final class MotionManager {
         motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, error in
             guard let self = self, let motion = motion else { return }
             
-            // Smooth tilt values using gravity
-            withAnimation(.easeOut(duration: 0.1)) {
-                self.tiltX = CGFloat(motion.gravity.x)
-                self.tiltY = CGFloat(motion.gravity.y)
-            }
+            // Update tilt values with low-pass filter smoothing
+            // Animation should be at VIEW level, not data level - this prevents lag
+            let alpha: CGFloat = 0.15 // Smoothing factor (0=smooth/laggy, 1=responsive/noisy)
+            self.tiltX = self.tiltX + alpha * (CGFloat(motion.gravity.x) - self.tiltX)
+            self.tiltY = self.tiltY + alpha * (CGFloat(motion.gravity.y) - self.tiltY)
             
             // Rotation rate for spinning effects
             self.rotationRateZ = CGFloat(motion.rotationRate.z)

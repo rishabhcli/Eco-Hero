@@ -44,9 +44,10 @@ final class ChallengeManager {
             return
         }
 
+        let inProgressStatus = ChallengeStatus.inProgress
         let descriptor = FetchDescriptor<Challenge>(
             predicate: #Predicate<Challenge> { challenge in
-                challenge.status == .inProgress
+                challenge.status == inProgressStatus
             }
         )
 
@@ -102,10 +103,11 @@ final class ChallengeManager {
         guard let context = modelContext else { return [] }
 
         let cutoffDate = Date().addingTimeInterval(Double(hours * 3600))
+        let inProgressStatus = ChallengeStatus.inProgress
 
         let descriptor = FetchDescriptor<Challenge>(
             predicate: #Predicate<Challenge> { challenge in
-                challenge.status == .inProgress
+                challenge.status == inProgressStatus
             }
         )
 
@@ -194,9 +196,10 @@ final class ChallengeManager {
     func getActiveChallenges(for userID: String) -> [Challenge] {
         guard let context = modelContext else { return [] }
 
+        let inProgressStatus = ChallengeStatus.inProgress
         let descriptor = FetchDescriptor<Challenge>(
             predicate: #Predicate<Challenge> { challenge in
-                challenge.status == .inProgress && challenge.userID == userID
+                challenge.status == inProgressStatus && challenge.userID == userID
             },
             sortBy: [SortDescriptor(\.endDate)]
         )
@@ -213,9 +216,10 @@ final class ChallengeManager {
     func getAvailableChallenges() -> [Challenge] {
         guard let context = modelContext else { return [] }
 
+        let notStartedStatus = ChallengeStatus.notStarted
         let descriptor = FetchDescriptor<Challenge>(
             predicate: #Predicate<Challenge> { challenge in
-                challenge.status == .notStarted
+                challenge.status == notStartedStatus
             }
         )
 
@@ -231,9 +235,10 @@ final class ChallengeManager {
     func getCompletedChallenges(for userID: String) -> [Challenge] {
         guard let context = modelContext else { return [] }
 
+        let completedStatus = ChallengeStatus.completed
         let descriptor = FetchDescriptor<Challenge>(
             predicate: #Predicate<Challenge> { challenge in
-                challenge.status == .completed && challenge.userID == userID
+                challenge.status == completedStatus && challenge.userID == userID
             },
             sortBy: [SortDescriptor(\.endDate, order: .reverse)]
         )

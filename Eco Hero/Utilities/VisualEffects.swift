@@ -311,7 +311,8 @@ private struct GyroLeafParticle: View {
     @State private var rotation: Double = 0
     @State private var opacity: Double = 0
     @State private var flutterRotation: Double = 0
-    
+    @State private var flutterTimer: Timer?
+
     // Parallax offset - closer leaves move more
     private var parallaxOffset: CGPoint {
         let multiplier = CGFloat(layerIndex + 1) * 12
@@ -320,10 +321,10 @@ private struct GyroLeafParticle: View {
             y: tiltY * multiplier * 0.5
         )
     }
-    
+
     // Flutter intensity on shake
     private var flutterIntensity: Double {
-        isShaking ? Double.random(in: 20...40) : 0
+        Double.random(in: 20...40)
     }
 
     var body: some View {
@@ -350,14 +351,25 @@ private struct GyroLeafParticle: View {
             }
             .onChange(of: isShaking) { _, shaking in
                 if shaking {
-                    withAnimation(.easeInOut(duration: 0.2).repeatWhile({ isShaking }, autoreverses: true)) {
-                        flutterRotation = flutterIntensity
+                    // Start flutter animation with Timer for proper state-driven control
+                    flutterTimer?.invalidate()
+                    let intensity = flutterIntensity
+                    flutterTimer = Timer.scheduledTimer(withTimeInterval: 0.12, repeats: true) { _ in
+                        withAnimation(.easeInOut(duration: 0.1)) {
+                            flutterRotation = flutterRotation > 0 ? -intensity : intensity
+                        }
                     }
+                    flutterTimer?.fire() // Start immediately
                 } else {
+                    flutterTimer?.invalidate()
+                    flutterTimer = nil
                     withAnimation(.easeOut(duration: 0.3)) {
                         flutterRotation = 0
                     }
                 }
+            }
+            .onDisappear {
+                flutterTimer?.invalidate()
             }
     }
 
@@ -387,13 +399,6 @@ private struct GyroLeafParticle: View {
     }
 }
 
-// Helper animation extension
-extension Animation {
-    func repeatWhile(_ condition: @escaping () -> Bool, autoreverses: Bool = true) -> Animation {
-        // This is a simplified version - in production would use a proper state machine
-        return self.repeatForever(autoreverses: autoreverses)
-    }
-}
 
 // MARK: - Water Effect with Gyroscope
 

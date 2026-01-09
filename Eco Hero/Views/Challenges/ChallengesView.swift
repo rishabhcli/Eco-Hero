@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import Combine
 
 struct ChallengesView: View {
     @Environment(\.modelContext) private var modelContext
@@ -219,12 +220,14 @@ struct ChallengesView: View {
                 ForEach(ChallengeTab.allCases) { tab in
                     if #available(iOS 26, *) {
                         Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                                 selectedTab = tab
                             }
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         } label: {
                             HStack(spacing: 8) {
                                 Image(systemName: tab.icon)
+                                    .symbolEffect(.bounce, value: selectedTab == tab)
                                 Text(tab.rawValue)
                                     .font(.subheadline.bold())
                             }
@@ -233,14 +236,16 @@ struct ChallengesView: View {
                             .foregroundStyle(selectedTab == tab ? .white : .primary)
                         }
                         .buttonStyle(.glass(selectedTab == tab
-                            ? .regular.tint(AppConstants.Colors.ocean.opacity(0.5)).interactive()
-                            : .regular.interactive()))
+                            ? .regular.tint(AppConstants.Colors.ocean.opacity(0.6)).interactive()
+                            : .regular.tint(.clear).interactive()))
                         .glassEffectID("tab-\(tab.rawValue)", in: glassNamespace)
+                        .scaleEffect(selectedTab == tab ? 1.02 : 1.0)
                     } else {
                         Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                                 selectedTab = tab
                             }
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         } label: {
                             HStack(spacing: 8) {
                                 Image(systemName: tab.icon)
@@ -256,17 +261,13 @@ struct ChallengesView: View {
                             cornerRadius: 16,
                             interactive: true
                         ))
+                        .scaleEffect(selectedTab == tab ? 1.02 : 1.0)
                     }
                 }
             }
         }
         .padding(6)
-        .compatibleGlassEffect(
-            tintColor: Color.primary.opacity(0.05),
-            cornerRadius: 24,
-            interactive: false
-        )
-        .compatibleGlassEffectID("tab-picker", in: glassNamespace)
+        .modifier(TabPickerGlassModifier(namespace: glassNamespace))
     }
 
     private func challengesSection<Content: View>(title: String, subtitle: String, items: [Challenge], @ViewBuilder content: @escaping (Challenge) -> Content) -> some View {
@@ -708,17 +709,123 @@ struct EnhancedChallengeCardView: View {
     }
 }
 
+// MARK: - Progress Ring Animation Values (iOS 26+)
+
+/// Keyframe animation values for progress ring
+private struct ProgressRingAnimationValues {
+    var progress: Double = 0
+    var scale: Double = 1.0
+    var glowIntensity: Double = 0.1
+}
+
 struct EnhancedCircularProgress: View {
     let progress: Double
     let tint: Color
     @State private var animatedProgress: Double = 0
+    @State private var animationTrigger: Int = 0
+    @State private var completionGlow: Double = 0
+    @State private var isComplete = false
 
     var body: some View {
+        Group {
+            if #available(iOS 26, *) {
+                iOS26ProgressRing
+            } else {
+                legacyProgressRing
+            }
+        }
+        .onAppear {
+            animationTrigger += 1
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.2)) {
+                animatedProgress = progress
+            }
+            checkCompletion()
+        }
+        .onChange(of: progress) { _, newValue in
+            animationTrigger += 1
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                animatedProgress = newValue
+            }
+            checkCompletion()
+        }
+    }
+
+    // MARK: - iOS 26+ with Keyframe Animation
+
+    @available(iOS 26, *)
+    private var iOS26ProgressRing: some View {
+        ZStack {
+            // Background glow with completion pulse
+            Circle()
+                .fill(tint.opacity(isComplete ? 0.25 + completionGlow * 0.15 : 0.1))
+                .blur(radius: isComplete ? 12 : 8)
+                .scaleEffect(isComplete ? 1.1 + completionGlow * 0.1 : 1.0)
+
+            // Track
+            Circle()
+                .stroke(Color.primary.opacity(0.08), lineWidth: 5)
+
+            // Progress ring with keyframe animation
+            Circle()
+                .trim(from: 0, to: CGFloat(min(animatedProgress, 1)))
+                .stroke(
+                    AngularGradient(
+                        colors: [tint.opacity(0.6), tint, tint.opacity(0.6)],
+                        center: .center
+                    ),
+                    style: StrokeStyle(lineWidth: 5, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+                .keyframeAnimator(
+                    initialValue: ProgressRingAnimationValues(progress: 0, scale: 1.0, glowIntensity: 0.1),
+                    trigger: animationTrigger
+                ) { content, value in
+                    content
+                        .scaleEffect(value.scale)
+                } keyframes: { _ in
+                    KeyframeTrack(\.scale) {
+                        LinearKeyframe(1.0, duration: 0.3)
+                        SpringKeyframe(1.08, duration: 0.2, spring: .bouncy)
+                        SpringKeyframe(1.0, duration: 0.3, spring: .bouncy)
+                    }
+                }
+
+            // Completion sparkle indicator
+            if isComplete {
+                Circle()
+                    .stroke(tint, lineWidth: 2)
+                    .scaleEffect(1.2 + completionGlow * 0.3)
+                    .opacity(0.5 - completionGlow * 0.4)
+            }
+
+            // Percentage with bounce
+            Text("\(Int(animatedProgress * 100))%")
+                .font(.caption.bold())
+                .foregroundStyle(tint)
+                .contentTransition(.numericText())
+                .keyframeAnimator(
+                    initialValue: 1.0,
+                    trigger: animationTrigger
+                ) { content, value in
+                    content.scaleEffect(value)
+                } keyframes: { _ in
+                    KeyframeTrack(\.self) {
+                        LinearKeyframe(1.0, duration: 0.4)
+                        SpringKeyframe(1.15, duration: 0.15, spring: .bouncy)
+                        SpringKeyframe(1.0, duration: 0.2, spring: .bouncy)
+                    }
+                }
+        }
+    }
+
+    // MARK: - Legacy (iOS 18-25)
+
+    private var legacyProgressRing: some View {
         ZStack {
             // Background glow
             Circle()
-                .fill(tint.opacity(0.1))
-                .blur(radius: 8)
+                .fill(tint.opacity(isComplete ? 0.25 : 0.1))
+                .blur(radius: isComplete ? 12 : 8)
 
             // Track
             Circle()
@@ -742,14 +849,23 @@ struct EnhancedCircularProgress: View {
                 .foregroundStyle(tint)
                 .contentTransition(.numericText())
         }
-        .onAppear {
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.2)) {
-                animatedProgress = progress
+    }
+
+    // MARK: - Completion Detection
+
+    private func checkCompletion() {
+        let wasComplete = isComplete
+        isComplete = progress >= 1.0
+
+        if isComplete && !wasComplete {
+            // Trigger completion celebration
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                completionGlow = 1.0
             }
-        }
-        .onChange(of: progress) { _, newValue in
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                animatedProgress = newValue
+        } else if !isComplete {
+            withAnimation(.easeOut(duration: 0.3)) {
+                completionGlow = 0
             }
         }
     }
@@ -1266,6 +1382,27 @@ struct EmptyStateView: View {
         )
         .onAppear {
             isAnimating = true
+        }
+    }
+}
+
+// MARK: - Tab Picker Glass Modifier
+
+private struct TabPickerGlassModifier: ViewModifier {
+    let namespace: Namespace.ID
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .glassEffect(.regular.tint(Color.primary.opacity(0.03)), in: RoundedRectangle(cornerRadius: 24))
+                .glassEffectUnion(id: "tab-picker-union", namespace: namespace)
+        } else {
+            content
+                .compatibleGlassEffect(
+                    tintColor: Color.primary.opacity(0.05),
+                    cornerRadius: 24,
+                    interactive: false
+                )
         }
     }
 }

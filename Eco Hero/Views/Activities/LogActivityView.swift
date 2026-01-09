@@ -190,17 +190,20 @@ struct LogActivityView: View {
             }
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: AppConstants.Layout.gridSpacing) {
-                ForEach(activityOptions(for: selectedCategory), id: \.self) { option in
+                ForEach(Array(activityOptions(for: selectedCategory).enumerated()), id: \.element) { index, option in
                     Button {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
                             selectedActivityType = option
                         }
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     } label: {
                         ActivityOptionCard(title: option, isSelected: selectedActivityType == option, color: selectedCategory.color)
                     }
                     .buttonStyle(.plain)
+                    .cascadeEntrance(index: index, delay: 0.05)
                 }
             }
+            .id(selectedCategory) // Reset animations when category changes
 
             // Apple Intelligence suggestion display - only on iOS 26+
             if #available(iOS 26, *) {

@@ -242,59 +242,99 @@ struct WasteSortingView: View {
     private var binButtons: some View {
         HStack(spacing: 12) {
             ForEach(WasteBin.allCases, id: \.self) { bin in
+                let isPredicted = classifier.predictedBin == bin
+                let confidenceGlow = isPredicted ? classifier.confidence : 0
+
                 if #available(iOS 26, *) {
                     Button {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                             evaluateSelection(bin)
                         }
+                        UIImpactFeedbackGenerator(style: isPredicted ? .medium : .light).impactOccurred()
                     } label: {
                         VStack(spacing: 4) {
                             Image(systemName: bin.icon)
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: isPredicted ? 22 : 18, weight: .semibold))
                                 .foregroundStyle(.white)
-                                .symbolEffect(.bounce, value: classifier.predictedBin == bin)
+                                .symbolEffect(.bounce, value: isPredicted)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPredicted)
 
                             Text(bin.rawValue)
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.white)
+
+                            // Confidence indicator for predicted bin
+                            if isPredicted && classifier.confidence > 0.3 {
+                                Text("\(Int(classifier.confidence * 100))%")
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.white.opacity(0.8))
+                                    .transition(.scale.combined(with: .opacity))
+                            }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, isPredicted ? 12 : 10)
                     }
-                    .buttonStyle(.glass(.regular.tint(bin.color.opacity(0.6)).interactive()))
+                    .buttonStyle(.glass(
+                        isPredicted
+                            ? .regular.tint(bin.color.opacity(0.7 + confidenceGlow * 0.3)).interactive()
+                            : .regular.tint(bin.color.opacity(0.4)).interactive()
+                    ))
                     .glassEffectID("bin-\(bin.rawValue)", in: glassNamespace)
+                    .scaleEffect(isPredicted ? 1.05 : 1.0)
+                    .shadow(
+                        color: isPredicted ? bin.color.opacity(0.5 + confidenceGlow * 0.3) : .clear,
+                        radius: isPredicted ? 12 + confidenceGlow * 8 : 0,
+                        x: 0,
+                        y: isPredicted ? 4 : 0
+                    )
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isPredicted)
                 } else {
                     Button {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                             evaluateSelection(bin)
                         }
+                        UIImpactFeedbackGenerator(style: isPredicted ? .medium : .light).impactOccurred()
                     } label: {
                         VStack(spacing: 4) {
                             Image(systemName: bin.icon)
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: isPredicted ? 22 : 18, weight: .semibold))
                                 .foregroundStyle(.white)
 
                             Text(bin.rawValue)
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(.white)
+
+                            // Confidence indicator for predicted bin
+                            if isPredicted && classifier.confidence > 0.3 {
+                                Text("\(Int(classifier.confidence * 100))%")
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.white.opacity(0.8))
+                            }
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, isPredicted ? 12 : 10)
                         .background(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
                                 .fill(.ultraThinMaterial)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(bin.color.opacity(0.5))
+                                        .fill(bin.color.opacity(isPredicted ? 0.6 + confidenceGlow * 0.2 : 0.5))
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                        .stroke(Color.white.opacity(isPredicted ? 0.5 : 0.3), lineWidth: isPredicted ? 2 : 1)
                                 )
                         )
-                        .shadow(color: bin.color.opacity(0.4), radius: 8, x: 0, y: 3)
+                        .shadow(
+                            color: bin.color.opacity(isPredicted ? 0.5 + confidenceGlow * 0.3 : 0.4),
+                            radius: isPredicted ? 12 : 8,
+                            x: 0,
+                            y: isPredicted ? 4 : 3
+                        )
+                        .scaleEffect(isPredicted ? 1.05 : 1.0)
                     }
                     .buttonStyle(.plain)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isPredicted)
                 }
             }
         }

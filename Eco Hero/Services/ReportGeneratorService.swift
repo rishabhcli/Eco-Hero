@@ -74,21 +74,6 @@ final class ReportGeneratorService {
         let renderer = ImageRenderer(content: reportView.frame(width: 612, height: 792))
         renderer.scale = 2.0 // Higher resolution
 
-        guard let pdfData = renderer.render(renderer: { size, render in
-            var box = CGRect(origin: .zero, size: CGSize(width: 612, height: 792))
-
-            guard let context = CGContext(createPDFContextToData: NSMutableData() as CFMutableData, mediaBox: &box, nil) else {
-                return
-            }
-
-            context.beginPDFPage(nil)
-            render(context)
-            context.endPDFPage()
-            context.closePDF()
-        }) else {
-            return nil
-        }
-
         // Save to temporary file
         let tempURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("EcoHero_Report_\(UUID().uuidString).pdf")
